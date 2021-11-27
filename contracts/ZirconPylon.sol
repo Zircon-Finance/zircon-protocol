@@ -64,8 +64,7 @@ contract ZirconPylon {
         if(msg.sender != pairAddress) {
             IZirconPair(pairAddress).tryLock();
         }
-
-
+        
     }
 
     //Called at the end of supply functions to supply any available 50-50 liquidity to underlying pool
