@@ -1,7 +1,7 @@
 pragma solidity ^0.4.0;
 
-import './interfaces/IZirconPair.sol';
-import './libraries/Math.sol';
+import './zircon-uniswapv2/interfaces/IZirconPair.sol';
+import './zircon-uniswapv2/libraries/Math.sol';
 
 contract ZirconPylon {
 
@@ -34,7 +34,7 @@ contract ZirconPylon {
     }
 
     constructor() {
-
+        // TODO: Create Anchor/Float ZirconPoolToken CREATE2
     }
 
     function supplyFloatLiquidity() external pairUnlocked {
@@ -98,8 +98,6 @@ contract ZirconPylon {
         }
 
         uint kPrime = reserve0 * reserve1;
-
-
 
         //Todo: Fix with actual integer math
         uint feeValue = totalPoolValuePrime.mul(1 - Math.sqrt(lastK/kPrime).mul(poolTokensPrime)/lastPoolTokens);

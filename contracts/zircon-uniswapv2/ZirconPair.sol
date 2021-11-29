@@ -15,7 +15,7 @@ interface IMigrator {
 }
 
 contract ZirconPair is UniswapV2ERC20 { //Name change does not affect ABI
-    using SafeMathUniswap  for uint;
+    using SafeMathUniswap for uint;
     using UQ112x112 for uint224;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
