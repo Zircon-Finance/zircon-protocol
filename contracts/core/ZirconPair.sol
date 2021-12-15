@@ -2,20 +2,21 @@
 
 pragma solidity =0.6.6;
 
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2ERC20.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
 import './interfaces/IERC20.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol';
 import './libraries/SafeMath.sol';
+import "./ZirconERC20.sol";
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
     function desiredLiquidity() external view returns (uint256);
 }
 
-contract ZirconPair is IUniswapV2ERC20 { //Name change does not affect ABI
+contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affect ABI
     using SafeMath for uint;
     using UQ112x112 for uint224;
 

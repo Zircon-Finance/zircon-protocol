@@ -2,6 +2,7 @@ pragma solidity ^0.6.6;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
+import './ZirconPair.sol';
 
 contract ZirconPylon {
 
@@ -25,12 +26,13 @@ contract ZirconPylon {
 
     //Calls dummy function with lock modifier
     modifier pairUnlocked() {
-        IZirconPair(pairAddress).tryLock();
+        ZirconPair(pairAddress).tryLock();
         _;
     }
 
     modifier blockRecursion() {
         //TODO: Should do some kind of block height check to ensure this user hasn't already called any of these functions
+        _;
     }
 
     constructor() public {
@@ -72,7 +74,7 @@ contract ZirconPylon {
         //Only continues if it's called by pair itself or if the pair is unlocked
         //Which ensures it's not called within UniswapV2Callee
         if(msg.sender != pairAddress) {
-            IZirconPair(pairAddress).tryLock();
+            ZirconPair(pairAddress).tryLock();
         }
 
         //So this thing needs to get pool reserves, get the price of the float asset in anchor terms
@@ -80,15 +82,15 @@ contract ZirconPylon {
         //Adds fees to virtualFloat and virtualAnchor
         //And then calculates Gamma so that the proportions are correct according to the formula
 
-        uint (reserve0, reserve1) = IZirconPair(pairAddress).getReserves();
+        (uint112 reserve0, uint112 reserve1,) = ZirconPair(pairAddress).getReserves();
         uint price;
         uint totalPoolValue;
+        uint totalPoolValuePrime;
 
-        uint poolTokensPrime = IZirconPair(pairAddress).totalSupply();
-        uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
+        uint poolTokensPrime = ZirconPair(pairAddress).totalSupply();
+        uint poolTokenBalance = ZirconPair(pairAddress).balanceOf(address(this));
 
         if(floatIsReserve0) {
-
             //Todo: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
             //price = oracle.getFloatPrice(reserve0, reserve1, floatToken, anchorToken);
             totalPoolValuePrime = reserve1.mul(2).mul(poolTokenBalance)/poolTokensPrime; //Adjusted by the protocol's share of the entire pool.

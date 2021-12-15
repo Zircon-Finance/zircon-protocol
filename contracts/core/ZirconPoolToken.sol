@@ -4,13 +4,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2ERC20.sol";
 
-contract ZirconAnchor is IUniswapV2ERC20, Ownable, ReentrancyGuard {
+contract ZirconPoolToken is IUniswapV2ERC20, Ownable, ReentrancyGuard {
     address public token;
     bool public isAnchor;
 
     //TODO: function mint
     //TODO: function redeeme
-    constructor() {}
+    constructor() public {}
 
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IUniswapV2Factory(factory).feeTo();
