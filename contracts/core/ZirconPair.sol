@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity =0.6.12;
+pragma solidity =0.6.6;
 
-import './UniswapV2ERC20.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2ERC20.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
 import './interfaces/IERC20.sol';
-import './interfaces/IUniswapV2Factory.sol';
-import './interfaces/IUniswapV2Callee.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol';
+import './libraries/SafeMath.sol';
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
     function desiredLiquidity() external view returns (uint256);
 }
 
-contract ZirconPair is UniswapV2ERC20 { //Name change does not affect ABI
-    using SafeMathUniswap for uint;
+contract ZirconPair is IUniswapV2ERC20 { //Name change does not affect ABI
+    using SafeMath for uint;
     using UQ112x112 for uint224;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;

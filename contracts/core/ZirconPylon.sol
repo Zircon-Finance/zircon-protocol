@@ -1,7 +1,7 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.6.6;
 
-import './zircon-uniswapv2/interfaces/IZirconPair.sol';
-import './zircon-uniswapv2/libraries/Math.sol';
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import './libraries/Math.sol';
 
 contract ZirconPylon {
 
@@ -33,7 +33,7 @@ contract ZirconPylon {
         //TODO: Should do some kind of block height check to ensure this user hasn't already called any of these functions
     }
 
-    constructor() {
+    constructor() public {
         // TODO: Create Anchor/Float ZirconPoolToken CREATE2
     }
 
