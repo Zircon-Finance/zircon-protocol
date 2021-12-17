@@ -1,10 +1,11 @@
-pragma solidity ^0.6.6;
+pragma solidity ^0.5.16;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
 import './ZirconPair.sol';
 
 contract ZirconPylon {
+    using SafeMath for uint;
 
     address public pairAddress;
 
@@ -93,10 +94,12 @@ contract ZirconPylon {
         if(floatIsReserve0) {
             //Todo: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
             //price = oracle.getFloatPrice(reserve0, reserve1, floatToken, anchorToken);
-            totalPoolValuePrime = reserve1.mul(2).mul(poolTokenBalance)/poolTokensPrime; //Adjusted by the protocol's share of the entire pool.
+            //TODO: SafeMath
+            //totalPoolValuePrime = reserve1.mul(2).mul(poolTokenBalance)/poolTokensPrime; //Adjusted by the protocol's share of the entire pool.
         } else {
             //price = oracle.getFloatPrice(reserve1, reserve0, floatToken, anchorToken);
-            totalPoolValuePrime = reserve0.mul(2).mul(poolTokenBalance)/poolTokensPrime;
+            //TODO: SafeMath
+            //totalPoolValuePrime = reserve0.mul(2).mul(poolTokenBalance)/poolTokensPrime;
         }
 
         uint kPrime = reserve0 * reserve1;

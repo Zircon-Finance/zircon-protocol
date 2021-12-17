@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity =0.6.6;
+pragma solidity =0.5.16;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
@@ -23,17 +23,17 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     uint public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    address public factory;
-    address public token0;
-    address public token1;
+    address public  factory;
+    address public  token0;
+    address public  token1;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
 
-    uint public price0CumulativeLast;
-    uint public price1CumulativeLast;
-    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
+    uint public  price0CumulativeLast;
+    uint public  price1CumulativeLast;
+    uint public  kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint private unlocked = 1;
     modifier lock() {
@@ -43,7 +43,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         unlocked = 1;
     }
 
-    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
+    function getReserves()  public view returns  (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
@@ -163,7 +163,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     //--------------------------------------------------
 
     // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external {
+    function initialize(address _token0, address _token1)   external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
@@ -207,7 +207,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external lock returns (uint liquidity) {
+    function mint(address to)  external lock returns (uint liquidity) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
@@ -217,15 +217,17 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
-            address migrator = IUniswapV2Factory(factory).migrator();
-            if (msg.sender == migrator) {
-                liquidity = IMigrator(migrator).desiredLiquidity();
-                require(liquidity > 0 && liquidity != uint256(-1), "Bad desired liquidity");
-            } else {
-                require(migrator == address(0), "Must not have migrator");
-                liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
-                _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
-            }
+            //TODO: Migrator not found on factory interface
+
+//            address migrator = IUniswapV2Factory(factory).migrator();
+//            if (msg.sender == migrator) {
+//                liquidity = IMigrator(migrator).desiredLiquidity();
+//                require(liquidity > 0 && liquidity != uint256(-1), "Bad desired liquidity");
+//            } else {
+//                require(migrator == address(0), "Must not have migrator");
+//                liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
+//                _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+//            }
         } else {
             liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
         }
@@ -238,7 +240,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address to) external lock returns (uint amount0, uint amount1) {
+    function burn(address to)  external lock returns (uint amount0, uint amount1) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
@@ -263,7 +265,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data)  external lock {
         require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
@@ -294,7 +296,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // force balances to match reserves
-    function skim(address to) external lock {
+    function skim(address to)  external lock {
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
         _safeTransfer(_token0, to, IERC20Uniswap(_token0).balanceOf(address(this)).sub(reserve0));
@@ -302,7 +304,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // force reserves to match balances
-    function sync() external lock {
+    function sync()  external lock {
         _update(IERC20Uniswap(token0).balanceOf(address(this)), IERC20Uniswap(token1).balanceOf(address(this)), reserve0, reserve1);
     }
 }

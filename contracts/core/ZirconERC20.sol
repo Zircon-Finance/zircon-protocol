@@ -1,4 +1,4 @@
-pragma solidity =0.6.6;
+pragma solidity =0.5.16;
 //TODO: Double check version code, pumped from uniswap erc20v2pair code
 
 import './interfaces/IUniswapV2ERC20.sol';
@@ -7,17 +7,17 @@ import './libraries/SafeMath.sol';
 contract ZirconERC20 is IUniswapV2ERC20 {
     using SafeMath for uint;
 
-    string public constant name = 'Uniswap V2';
-    string public constant symbol = 'UNI-V2';
-    uint8 public constant decimals = 18;
-    uint  public totalSupply;
-    mapping(address => uint) public balanceOf;
+    string public constant  name = 'Uniswap V2';
+    string public constant  symbol = 'UNI-V2';
+    uint8 public constant  decimals = 18;
+    uint public  totalSupply;
+    mapping(address => uint)  public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-    mapping(address => uint) public nonces;
+    bytes32 public constant  PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    mapping(address => uint)  public nonces;
+    bytes32  public DOMAIN_SEPARATOR;
 
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
