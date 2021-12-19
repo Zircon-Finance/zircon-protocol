@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity =0.5.16;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
@@ -23,17 +22,17 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     uint public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    address public  factory;
-    address public  token0;
-    address public  token1;
+    address public factory;
+    address public token0;
+    address public token1;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
 
-    uint public  price0CumulativeLast;
-    uint public  price1CumulativeLast;
-    uint public  kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
+    uint public price0CumulativeLast;
+    uint public price1CumulativeLast;
+    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint private unlocked = 1;
     modifier lock() {
@@ -66,13 +65,9 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     );
     event Sync(uint112 reserve0, uint112 reserve1);
 
-
     //--------------------------------------------------
     //-------------------Open Zircon Diff--------------------
-
     mapping(address => bool) public zirconApprovedUsers; //Repository for vault, router and other addresses that can call swapNoFee
-
-
 
     //Flexible system, no isContract checks for potential future uses
     modifier onlyZircon() {
@@ -90,8 +85,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         uint amount1Out,
         address indexed to
     );
-
-
 
     constructor() public {
         factory = msg.sender;

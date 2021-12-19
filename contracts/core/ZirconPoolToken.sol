@@ -14,10 +14,10 @@ contract ZirconPoolToken is IUniswapV2ERC20, Ownable, ReentrancyGuard {
     bool public isAnchor;
     address public factory;
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
-    uint public  totalSupply;
+    uint public totalSupply;
 
     //TODO: function mint
-    //TODO: function redeeme
+    //TODO: function redeem
     constructor() public {}
 
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {

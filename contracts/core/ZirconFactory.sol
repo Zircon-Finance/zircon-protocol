@@ -26,21 +26,22 @@ contract ZirconFactory is IUniswapV2Factory {
         return keccak256(type(ZirconPair).creationCode);
     }
 
+    //Token A -> Anchor Token, TokenB -> Float Token
     function createPair(address tokenA, address tokenB) external  returns (address pair) {
         require(tokenA != tokenB, 'UniswapV2: IDENTICAL_ADDRESSES');
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
-        require(getPair[token0][token1] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
+        require(tokenA != address(0), 'UniswapV2: ANCHOR ZERO_ADDRESS');
+        require(tokenB != address(0), 'UniswapV2: FLOAT ZERO_ADDRESS');
+        require(getPair[tokenA][tokenB] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
         bytes memory bytecode = type(ZirconPair).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+        bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPair(pair).initialize(token0, token1);
-        getPair[token0][token1] = pair;
-        getPair[token1][token0] = pair; // populate mapping in the reverse direction
+        ZirconPair(pair).initialize(tokenA, tokenB);
+        getPair[tokenA][tokenB] = pair;
+        //getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
-        emit PairCreated(token0, token1, pair, allPairs.length);
+        emit PairCreated(tokenA, tokenB, pair, allPairs.length);
     }
 
     function setFeeTo(address _feeTo) external  {
