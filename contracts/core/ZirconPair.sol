@@ -27,7 +27,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     address public token1;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
-    uint112 private reserve1;           // uses single storage slot, accessible via getReserves
+    uint112 private reserve1;           // us es single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
 
     uint public price0CumulativeLast;
@@ -70,6 +70,13 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     mapping(address => bool) public zirconApprovedUsers; //Repository for vault, router and other addresses that can call swapNoFee
 
     //Flexible system, no isContract checks for potential future uses
+    modifier approved(address _user) {
+        require(_user != address(this), "ZirconPair: Can't remove approval of self");
+        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
+        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
+        _;
+    }
+
     modifier onlyZircon() {
         require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
         _;
@@ -91,20 +98,15 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         zirconApprovedUsers[factory] = true;
     }
 
-    function addApprovedUser(address _user) external lock onlyZircon {
-        require(_user != address(this), "ZirconPair: Can't set approval to self");
-        require(_user != address(0), "ZirconPair: Can't set approval to zero");
-        //Todo: Other checks?
-
+    function addApprovedUser(address _user) external lock approved(_user) onlyZircon {
+        //TODO: Other checks?
         zirconApprovedUsers[_user] = true;
         emit UserAdded(_user);
     }
 
-    function removeApprovedUser(address _user) external lock onlyZircon {
-        require(_user != address(this), "ZirconPair: Can't remove approval of self");
-        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
+    function removeApprovedUser(address _user) external lock approved(_user) onlyZircon {
         require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved to begin with");
-        //Todo: Other checks?
+        //TODO: Other checks?
 
         zirconApprovedUsers[_user] = false;
         emit UserRemoved(_user);
@@ -137,23 +139,19 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
         uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
         require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
-        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-
-            //Removes fee-related calculations and adjustments.
-
+        { // Scope for reserve{0,1}Adjusted, avoids stack too deep errors
+            // Removes fee-related calculations and adjustments.
             uint balance0Adjusted = balance0;
             uint balance1Adjusted = balance1;
             require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
         }
-
         _update(balance0, balance1, _reserve0, _reserve1);
         emit SwapNoFee(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
 
-
-
+    //--------------------------------------------------------
     //-------------------Close Zircon Diff--------------------
-    //--------------------------------------------------
+    //--------------------------------------------------------
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1)   external {

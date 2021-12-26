@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity =0.5.16;
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import './ZirconPoolToken.sol';
 import './ZirconPair.sol';
+import './ZirconPylon.sol';
+//import "./interfaces/IZirconPoolToken.sol";
 
 contract ZirconFactory is IUniswapV2Factory {
     address public feeTo;
@@ -13,6 +15,8 @@ contract ZirconFactory is IUniswapV2Factory {
     address[] public  allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event PylonCreated(address indexed token0, address indexed token1, address pair);
+    event PoolTokenCreated(address indexed token0, address poolToken);
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
@@ -25,6 +29,29 @@ contract ZirconFactory is IUniswapV2Factory {
     function pairCodeHash() external pure returns (bytes32) {
         return keccak256(type(ZirconPair).creationCode);
     }
+
+    function createToken(address _token, bool isAnchor) private returns (address poolToken) {
+        // Creaating Token
+        bytes memory bytecode = type(ZirconPoolToken).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(_token));
+        assembly {
+            poolToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        ZirconPoolToken(poolToken).initialize(_token, isAnchor);
+        emit PoolTokenCreated(_token, poolToken);
+    }
+
+    function createPylon(address _tokenA, address _tokenB) private returns (address pylon) {
+        // Creaating Token
+        bytes memory bytecode = type(ZirconPylon).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB));
+        assembly {
+            pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        ZirconPylon(pylon).initialize(_tokenA, _tokenB);
+        emit PylonCreated(_tokenA, _tokenB, pylon);
+    }
+
 
     //Token A -> Anchor Token, TokenB -> Float Token
     function createPair(address tokenA, address tokenB) external  returns (address pair) {
@@ -39,8 +66,11 @@ contract ZirconFactory is IUniswapV2Factory {
         }
         ZirconPair(pair).initialize(tokenA, tokenB);
         getPair[tokenA][tokenB] = pair;
-        //getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
+
+        createToken(tokenA, true);
+        createToken(tokenB, false);
+        createPylon(tokenA, tokenB);
         emit PairCreated(tokenA, tokenB, pair, allPairs.length);
     }
 

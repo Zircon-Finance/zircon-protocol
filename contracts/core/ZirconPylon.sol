@@ -1,5 +1,4 @@
 pragma solidity ^0.5.16;
-
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
 import './ZirconPair.sol';
@@ -9,6 +8,7 @@ contract ZirconPylon {
 
     address public pairAddress;
 
+    address public factory;
     address public floatToken;
     address public anchorToken;
     bool floatIsReserve0;
@@ -25,6 +25,8 @@ contract ZirconPylon {
 
     uint ownedPoolTokens; //Used to track the pool tokens it owns but may not necessarily contain as balanceOf
 
+
+
     //Calls dummy function with lock modifier
     modifier pairUnlocked() {
         ZirconPair(pairAddress).tryLock();
@@ -37,8 +39,19 @@ contract ZirconPylon {
     }
 
     constructor() public {
-        // TODO: Create Anchor/Float ZirconPoolToken CREATE2
+        factory = msg.sender;
     }
+
+
+
+
+    // called once by the factory at time of deployment
+    function initialize(address _token0, address _token1) external {
+        require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+        floatToken = _token0;
+        anchorToken = _token1;
+    }
+
 
     function supplyFloatLiquidity() external pairUnlocked {
         //Mints Float pool tokens to the user according to the value supplied

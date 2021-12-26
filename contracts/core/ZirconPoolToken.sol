@@ -2,12 +2,13 @@ pragma solidity ^0.5.16;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2ERC20.sol";
+//import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import './libraries/Math.sol';
 import "./libraries/SafeMath.sol";
+import "./ZirconERC20.sol";
 
-contract ZirconPoolToken is IUniswapV2ERC20, Ownable, ReentrancyGuard {
+contract ZirconPoolToken is ZirconERC20, Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     address public token;
@@ -41,7 +42,7 @@ contract ZirconPoolToken is IUniswapV2ERC20, Ownable, ReentrancyGuard {
     }
 
 
-    function _mint(uint112 _reserve, uint _balance) onlyOwner nonReentrant public {
+    function _mint(uint112 _reserve, uint _balance) onlyOwner nonReentrant external {
         // diff anchor
         // liquidita aggiunta in float con liquidita
         // TPV * gamma
@@ -66,7 +67,14 @@ contract ZirconPoolToken is IUniswapV2ERC20, Ownable, ReentrancyGuard {
 
     }
 
-    function redeem() onlyOwner nonReentrant public {
+    function redeem() onlyOwner nonReentrant external {
 
+    }
+
+    // called once by the factory at time of deployment
+    function initialize(address _token0, bool _isAnchor) external {
+        require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+        token = _token0;
+        isAnchor = isAnchor;
     }
 }

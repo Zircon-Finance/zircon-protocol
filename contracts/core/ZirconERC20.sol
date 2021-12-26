@@ -15,9 +15,9 @@ contract ZirconERC20 is IUniswapV2ERC20 {
     mapping(address => mapping(address => uint)) public allowance;
 
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant  PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint)  public nonces;
-    bytes32  public DOMAIN_SEPARATOR;
+    bytes32 public DOMAIN_SEPARATOR;
 
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
