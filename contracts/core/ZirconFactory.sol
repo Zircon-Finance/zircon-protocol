@@ -30,25 +30,25 @@ contract ZirconFactory is IUniswapV2Factory {
         return keccak256(type(ZirconPair).creationCode);
     }
 
-    function createToken(address _token, bool isAnchor) private returns (address poolToken) {
+    function createToken(address _token, address _pair, bool isAnchor) private returns (address poolToken) {
         // Creaating Token
         bytes memory bytecode = type(ZirconPoolToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_token));
         assembly {
             poolToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPoolToken(poolToken).initialize(_token, isAnchor);
+        ZirconPoolToken(poolToken).initialize(_token, _pair, isAnchor);
         emit PoolTokenCreated(_token, poolToken);
     }
 
-    function createPylon(address _tokenA, address _tokenB) private returns (address pylon) {
+    function createPylon(address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
         // Creaating Token
         bytes memory bytecode = type(ZirconPylon).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB));
+        bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB, _pair));
         assembly {
             pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPylon(pylon).initialize(_tokenA, _tokenB);
+        ZirconPylon(pylon).initialize(_tokenA, _tokenB, _pair);
         emit PylonCreated(_tokenA, _tokenB, pylon);
     }
 
@@ -68,9 +68,9 @@ contract ZirconFactory is IUniswapV2Factory {
         getPair[tokenA][tokenB] = pair;
         allPairs.push(pair);
 
-        createToken(tokenA, true);
-        createToken(tokenB, false);
-        createPylon(tokenA, tokenB);
+        address poolTokenA = createToken(tokenA, pair, true);
+        address poolTokenB = createToken(tokenB, pair, false);
+        createPylon(poolTokenA, poolTokenB, pair);
         emit PairCreated(tokenA, tokenB, pair, allPairs.length);
     }
 

@@ -7,19 +7,18 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import './libraries/Math.sol';
 import "./libraries/SafeMath.sol";
 import "./ZirconERC20.sol";
+import "./ZirconPair.sol";
 
 contract ZirconPoolToken is ZirconERC20, Ownable, ReentrancyGuard {
     using SafeMath for uint;
 
     address public token;
+    address public pair;
     bool public isAnchor;
     address public factory;
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
     uint public totalSupply;
 
-    //TODO: function mint
-    //TODO: function redeem
-    constructor() public {}
 
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IUniswapV2Factory(factory).feeTo();
@@ -42,14 +41,19 @@ contract ZirconPoolToken is ZirconERC20, Ownable, ReentrancyGuard {
     }
 
 
-    function _mint(uint112 _reserve, uint _balance) onlyOwner nonReentrant external {
+    function mint(uint112 _reserve, uint _balance) onlyOwner nonReentrant external  returns (uint liquidity) {
         // diff anchor
         // liquidita aggiunta in float con liquidita
         // TPV * gamma
         // balance
 
-        uint amount = _balance.sub(_reserve);
-
+//        (uint112 _reserve0, uint112 _reserve1, ) = ZirconPair(pair).getReserves();
+//        uint balance0 = ZirconERC20(token0).balanceOf(address(this));
+//        uint balance1 = ZirconERC20(token1).balanceOf(address(this));
+//        uint amount0 = balance0.sub(_reserve0);
+//        uint amount1 = balance1.sub(_reserve1);
+//
+//
 //        bool feeOn = _mintFee(_reserve0, _reserve1);
 //        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 //        if (_totalSupply == 0) {
@@ -71,10 +75,12 @@ contract ZirconPoolToken is ZirconERC20, Ownable, ReentrancyGuard {
 
     }
 
+    constructor() public {}
     // called once by the factory at time of deployment
-    function initialize(address _token0, bool _isAnchor) external {
+    function initialize(address _token0, address _pair, bool _isAnchor) external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
         token = _token0;
+        pair = _pair;
         isAnchor = isAnchor;
     }
 }

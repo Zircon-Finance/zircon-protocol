@@ -28,7 +28,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // us es single storage slot, accessible via getReserves
-    uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
+    uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
 
     uint public price0CumulativeLast;
     uint public price1CumulativeLast;
@@ -295,7 +295,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // force reserves to match balances
-    function sync()  external lock {
+    function sync() external lock {
         _update(IERC20Uniswap(token0).balanceOf(address(this)), IERC20Uniswap(token1).balanceOf(address(this)), reserve0, reserve1);
     }
 }
