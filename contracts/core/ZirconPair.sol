@@ -208,8 +208,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
-            //TODO: Migrator not found on factory interface
 
+            // TODO: Migrator not found on factory interface
 //            address migrator = IUniswapV2Factory(factory).migrator();
 //            if (msg.sender == migrator) {
 //                liquidity = IMigrator(migrator).desiredLiquidity();

@@ -1,3 +1,4 @@
+require('dotenv').config()
 require("@nomiclabs/hardhat-waffle");
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -10,37 +11,55 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+console.log(process.env.PRIVKEY)
+
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
+const privateKey = process.env.PRIVKEY;
+const privateKeyDev = process.env.PRIVKEY_DEV;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
+  defaultNetwork: 'hardhat',
+
+  networks: {
+    hardhat: {},
+
+    moonbase: {
+      url: 'https://rpc.testnet.moonbeam.network',
+      accounts: [privateKey],
+      chainId: 1287,
+    },
+    dev: {
+      url: 'http://127.0.0.1:9933',
+      accounts: [privateKeyDev],
+      network_id: '1281',
+      chainId: 1281,
+    },
+  },
   solidity: {
     compilers: [
       {
-        version: "0.8.0",
+        version: '0.5.16',
         settings: {
           optimizer: {
             enabled: true,
             runs: 200,
           },
-        }
+        },
       },
       {
-        version: "0.6.12",
+        version: '0.6.6',
         settings: {
           optimizer: {
             enabled: true,
             runs: 200,
           },
-        }
-      },{
-        version: "0.5.16",
-      },{
-        version: "0.6.6",
-      }
+        },
+      },
     ],
   }
   ,
