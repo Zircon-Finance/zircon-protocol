@@ -75,10 +75,13 @@ contract ZirconPoolToken is ZirconERC20, Ownable, ReentrancyGuard {
 
     }
 
-    constructor() public {}
+    constructor() public {
+        factory = msg.sender;
+    }
+
     // called once by the factory at time of deployment
     function initialize(address _token0, address _pair, bool _isAnchor) external {
-        require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, 'ZirconPoolToken: FORBIDDEN'); // sufficient check
         token = _token0;
         pair = _pair;
         isAnchor = isAnchor;

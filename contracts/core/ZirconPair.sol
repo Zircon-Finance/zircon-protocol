@@ -155,7 +155,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1)   external {
-        require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, 'ZirconPair: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
     }

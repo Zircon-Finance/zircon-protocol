@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const {ethers} = require("ethers");
+const { ethers } = require('hardhat');
 
 describe("Greeter", function () {
   it("Let's create a pair", async function () {

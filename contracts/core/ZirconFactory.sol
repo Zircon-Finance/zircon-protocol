@@ -55,10 +55,10 @@ contract ZirconFactory is IUniswapV2Factory {
 
     //Token A -> Anchor Token, TokenB -> Float Token
     function createPair(address tokenA, address tokenB) external  returns (address pair) {
-        require(tokenA != tokenB, 'UniswapV2: IDENTICAL_ADDRESSES');
-        require(tokenA != address(0), 'UniswapV2: ANCHOR ZERO_ADDRESS');
-        require(tokenB != address(0), 'UniswapV2: FLOAT ZERO_ADDRESS');
-        require(getPair[tokenA][tokenB] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
+        require(tokenA != tokenB, 'ZirconFactory: IDENTICAL_ADDRESSES');
+        require(tokenA != address(0), 'ZirconFactory: ANCHOR ZERO_ADDRESS');
+        require(tokenB != address(0), 'ZirconFactory: FLOAT ZERO_ADDRESS');
+        require(getPair[tokenA][tokenB] == address(0), 'ZirconFactory: PAIR_EXISTS'); // single check is sufficient
         bytes memory bytecode = type(ZirconPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB));
         assembly {
@@ -75,17 +75,17 @@ contract ZirconFactory is IUniswapV2Factory {
     }
 
     function setFeeTo(address _feeTo) external  {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'ZirconFactory: FORBIDDEN');
         feeTo = _feeTo;
     }
 
     function setMigrator(address _migrator) external {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'ZirconFactory: FORBIDDEN');
         migrator = _migrator;
     }
 
     function setFeeToSetter(address _feeToSetter) external  {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'ZirconFactory: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
 }
