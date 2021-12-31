@@ -11,11 +11,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-console.log(process.env.PRIVKEY)
-
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
 const privateKey = process.env.PRIVKEY;
 const privateKeyDev = process.env.PRIVKEY_DEV;
 
@@ -27,7 +22,6 @@ module.exports = {
 
   networks: {
     hardhat: {},
-
     moonbase: {
       url: 'https://rpc.testnet.moonbeam.network',
       accounts: [privateKey],

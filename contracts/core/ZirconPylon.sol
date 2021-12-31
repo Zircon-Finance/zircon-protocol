@@ -9,6 +9,7 @@ contract ZirconPylon {
     using UQ112x112 for uint224;
 
     address public pairAddress;
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
     address public factory;
     address public floatPoolToken;
@@ -23,7 +24,6 @@ contract ZirconPylon {
     uint lastPoolTokens;
     uint percentageReserve; // Amount reserved for liquidity withdrawals/insertions
     uint ownedPoolTokens; // Used to track the pool tokens it owns but may not necessarily contain as balanceOf
-
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // us es single storage slot, accessible via getReserves
@@ -45,6 +45,12 @@ contract ZirconPylon {
         _;
     }
 
+    function _safeTransfer(address token, address to, uint value) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
+    }
+
+
     constructor() public {
         factory = msg.sender;
     }
@@ -54,6 +60,7 @@ contract ZirconPylon {
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
     }
+
     // called once by the factory at time of deployment
     function initialize(address _floatPoolToken, address _anchorPoolToken, address _pairAddress) external {
         require(msg.sender == factory, 'Zircon: FORBIDDEN'); // sufficient check
@@ -62,14 +69,11 @@ contract ZirconPylon {
         pairAddress = _pairAddress;
     }
 
-
 //    function update() private {
 //        // TODO: check current balances
 //        // send balance to Pair Contract if 50-50 Liquidity
 //        // remain with the other part
 //        (uint112 _reserve0, uint112 _reserve1, ) = getReserves();
-//
-//
 //    }
 
     //TODO: check for overflow and precision
@@ -84,11 +88,11 @@ contract ZirconPylon {
         }
     }
 
-
     //TODO: Test this
     // update reserves and, on the first call per block, price accumulators
-    function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'UniswapV2: OVERFLOW');
+    function _update() private {
+        uint112 _reserve0 = reserve0;
+        uint112 _reserve1 = reserve1;
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
@@ -99,12 +103,9 @@ contract ZirconPylon {
             uint ratio = uint(UQ112x112.encode(_pairReserve1).uqdiv(_pairReserve0));
             (uint tx, uint ty) = getMaximum(ratio, _reserve0, _reserve1);
 
-
-
-            //price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+            _safeTransfer(floatPoolToken, pairAddress, tx);
+            _safeTransfer(anchorPoolToken, pairAddress, ty);
         }
-        reserve0 = uint112(balance0);
-        reserve1 = uint112(balance1);
         blockTimestampLast = blockTimestamp;
         emit PylonSync(reserve0, reserve1);
     }
@@ -118,7 +119,7 @@ contract ZirconPylon {
         // mintFloatTokens()
 
         // Then sends liquidity if it has the appropriate reserves for it
-        _sendLiquidity();
+        _update();
     }
 
     function removeFloatLiquidity() external pairUnlocked {
