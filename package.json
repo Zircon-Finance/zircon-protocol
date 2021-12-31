@@ -3,10 +3,11 @@
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "chai": "^4.3.4",
+    "chai": "*",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.1",
-    "hardhat": "^2.6.8"
+    "hardhat": "^2.6.8",
+    "mocha": "*"
   },
   "dependencies": {
     "@openzeppelin/contracts": "2.5.0",
@@ -14,5 +15,9 @@
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "dotenv": "^10.0.0"
+  },
+  "scripts": {
+    "deploy": "npx hardhat run --network dev scripts/deploy-script.js",
+    "test": "mocha"
   }
 }

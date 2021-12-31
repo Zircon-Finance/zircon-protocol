@@ -2,8 +2,8 @@ const { ethers } = require('hardhat');
 
 // Deploy function
 async function deploy() {
-    [account] = await ethers.getSigners();
-    deployerAddress = account.address;
+    const [account] = await ethers.getSigners();
+    let deployerAddress = account.address;
     console.log(`Deploying contracts using ${deployerAddress}`);
 
     //Deploy WETH
@@ -29,22 +29,22 @@ async function deploy() {
     console.log(`Router V02 deployed to :  ${routerInstance.address}`);
 
     //Deploy Multicall (needed for Interface)
-    // const multicall = await ethers.getContractFactory('Multicall');
-    // const multicallInstance = await multicall.deploy();
-    // await multicallInstance.deployed();
-    //
-    // console.log(`Multicall deployed to : ${multicallInstance.address}`);
+    const multicall = await ethers.getContractFactory('Multicall');
+    const multicallInstance = await multicall.deploy();
+    await multicallInstance.deployed();
+
+    console.log(`Multicall deployed to : ${multicallInstance.address}`);
 
     //Deploy Tokens
-    // const tok1 = await ethers.getContractFactory('Token');
-    // const tok1Instance = await tok1.deploy('Token1', 'TOK1');
-    //
-    // console.log(`Token1 deployed to : ${tok1Instance.address}`);
-    //
-    // const tok2 = await ethers.getContractFactory('Token');
-    // const tok2Instance = await tok2.deploy('Token2', 'TOK2');
-    //
-    // console.log(`Token2 deployed to : ${tok2Instance.address}`);
+    const tok1 = await ethers.getContractFactory('Token');
+    const tok1Instance = await tok1.deploy('Token1', 'TOK1');
+
+    console.log(`Token1 deployed to : ${tok1Instance.address}`);
+
+    const tok2 = await ethers.getContractFactory('Token');
+    const tok2Instance = await tok2.deploy('Token2', 'TOK2');
+
+    console.log(`Token2 deployed to : ${tok2Instance.address}`);
     /*
     //Approve router on tokens
     console.log(`Approving Router on Token1`);

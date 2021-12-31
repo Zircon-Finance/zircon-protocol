@@ -1,18 +1,30 @@
 const { expect } = require("chai");
+const {ethers} = require("ethers");
 
 describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+  it("Let's create a pair", async function () {
+    [account] = await ethers.getSigners();
+    deployerAddress = account.address;
+    console.log(`Deploying contracts using ${deployerAddress}`);
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+    const factory = await ethers.getContractFactory('ZirconFactory');
+    const factoryInstance = await factory.deploy(deployerAddress);
+    console.log(`Factory deployed to : ${factoryInstance.address}`);
+    //Deploy Tokens
+    const tok1 = await ethers.getContractFactory('Token');
+    const tok1Instance = await tok1.deploy('Token1', 'TOK1');
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
+    console.log(`Token1 deployed to : ${tok1Instance.address}`);
 
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
+    const tok2 = await ethers.getContractFactory('Token');
+    const tok2Instance = await tok2.deploy('Token2', 'TOK2');
 
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+    console.log(`Token2 deployed to : ${tok2Instance.address}`);
+
+    await factoryInstance.createPair(tok1Instance.address, tok2Instance.address);
+    const lpAddress = await factoryInstance.getPair(
+        tok1Instance.address,
+        tok2Instance.address
+    );
   });
 });
