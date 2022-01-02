@@ -13,7 +13,7 @@ contract ZirconFactory is IUniswapV2Factory {
 
     mapping(address => mapping(address => address)) public getPair;
     mapping(address => address) public getPylon;
-    address[] public  allPairs;
+    address[] public allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
     event PylonCreated(address indexed token0, address indexed token1, address pair);
@@ -34,7 +34,7 @@ contract ZirconFactory is IUniswapV2Factory {
     function createToken(address _token, address _pair, bool isAnchor) private returns (address poolToken) {
         // Creaating Token
         bytes memory bytecode = type(ZirconPoolToken).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(_token));
+        bytes32 salt = keccak256(abi.encodePacked(_token, allPairs.length));
         assembly {
             poolToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
@@ -55,13 +55,13 @@ contract ZirconFactory is IUniswapV2Factory {
 
 
     //Token A -> Anchor Token, TokenB -> Float Token
-    function createPair(address tokenA, address tokenB) external  returns (address pair) {
+    function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'ZirconFactory: IDENTICAL_ADDRESSES');
         require(tokenA != address(0), 'ZirconFactory: ANCHOR ZERO_ADDRESS');
         require(tokenB != address(0), 'ZirconFactory: FLOAT ZERO_ADDRESS');
         require(getPair[tokenA][tokenB] == address(0), 'ZirconFactory: PAIR_EXISTS'); // single check is sufficient
         bytes memory bytecode = type(ZirconPair).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB));
+        bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB, allPairs.length));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
