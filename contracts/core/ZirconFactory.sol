@@ -12,6 +12,7 @@ contract ZirconFactory is IUniswapV2Factory {
     address public migrator;
 
     mapping(address => mapping(address => address)) public getPair;
+    mapping(address => address) public getPylon;
     address[] public  allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -70,7 +71,9 @@ contract ZirconFactory is IUniswapV2Factory {
 
         address poolTokenA = createToken(tokenA, pair, true);
         address poolTokenB = createToken(tokenB, pair, false);
-        createPylon(poolTokenA, poolTokenB, pair);
+        address pylon = createPylon(poolTokenA, poolTokenB, pair);
+        getPylon[pair] = pylon;
+
         emit PairCreated(tokenA, tokenB, pair, allPairs.length);
     }
 
