@@ -212,9 +212,9 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
             address migrator = ZirconFactory(factory).migrator();
             if (msg.sender == migrator) {
                 liquidity = IMigrator(migrator).desiredLiquidity();
-                require(liquidity > 0 && liquidity != uint256(-1), "Bad desired liquidity");
+                require(liquidity > 0 && liquidity != uint256(-1), "ZirconPair: Bad desired liquidity");
             } else {
-                require(migrator == address(0), "Must not have migrator");
+                require(migrator == address(0), "ZirconPair: Must not have migrator");
                 liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
                 _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
             }
