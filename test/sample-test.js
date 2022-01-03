@@ -234,4 +234,74 @@ describe("Pair", () => {
     expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
   })
 
+  it('burn', async () => {
+    const token0Amount = expandTo18Decimals(3)
+    const token1Amount = expandTo18Decimals(3)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const expectedLiquidity = expandTo18Decimals(3)
+    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await expect(pair.burn(account.address, overrides))
+        .to.emit(pair, 'Transfer')
+        .withArgs(pair.address, ethers.constants.AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+        .to.emit(tok1Instance, 'Transfer')
+        .withArgs(pair.address, account.address, token0Amount.sub(1000))
+        .to.emit(tok1Instance, 'Transfer')
+        .withArgs(pair.address, account.address, token1Amount.sub(1000))
+        .to.emit(pair, 'Sync')
+        .withArgs(1000, 1000)
+        .to.emit(pair, 'Burn')
+        .withArgs(account.address, token0Amount.sub(1000), token1Amount.sub(1000), account.address)
+
+    expect(await pair.balanceOf(account.address)).to.eq(0)
+    expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
+    expect(await tok1Instance.balanceOf(pair.address)).to.eq(1000)
+    expect(await tok2Instance.balanceOf(pair.address)).to.eq(1000)
+    const totalSupplyToken0 = await tok1Instance.totalSupply()
+    const totalSupplyToken1 = await tok2Instance.totalSupply()
+    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(1000))
+    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(1000))
+  })
+
+  it('feeTo:off', async () => {
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = ethers.BigNumber.from('996006981039903216')
+    await tok2Instance.transfer(pair.address, swapAmount)
+    await pair.swap(expectedOutputAmount, 0, account.address, '0x', overrides)
+
+    const expectedLiquidity = expandTo18Decimals(1000)
+    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await pair.burn(account.address, overrides)
+    expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
+  })
+
+
+  it('feeTo:on', async () => {
+    await factoryInstance.setFeeTo(account2.address)
+
+    const token0Amount = expandTo18Decimals(1000)
+    const token1Amount = expandTo18Decimals(1000)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = ethers.BigNumber.from('996006981039903216')
+    await tok2Instance.transfer(pair.address, swapAmount)
+    await pair.swap(expectedOutputAmount, 0, account.address, '0x', overrides)
+
+    const expectedLiquidity = expandTo18Decimals(1000)
+    await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+    await pair.burn(account.address, overrides)
+    expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY.add('249750499251388'))
+    expect(await pair.balanceOf(account2.address)).to.eq('249750499251388')
+
+    // using 1000 here instead of the symbolic MINIMUM_LIQUIDITY because the amounts only happen to be equal...
+    // ...because the initial liquidity amounts were equal
+    expect(await tok1Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('249501683697445'))
+    expect(await tok2Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('250000187312969'))
+  })
+
 })
