@@ -68,7 +68,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
 
     //--------------------------------------------------
     //-------------------Open Zircon Diff--------------------
-    mapping(address => bool) public zirconApprovedUsers; //Repository for vault, router and other addresses that can call swapNoFee
+    mapping(address => bool) public zirconApprovedUsers; // Repository for vault, router and other addresses that can call swapNoFee
 
     //Flexible system, no isContract checks for potential future uses
     modifier approved(address _user) {
@@ -97,26 +97,21 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     constructor() public {
         factory = msg.sender;
         zirconApprovedUsers[factory] = true;
+        zirconApprovedUsers[tx.origin] = true;
     }
 
     function addApprovedUser(address _user) external lock approved(_user) onlyZircon {
-        //TODO: Other checks?
         zirconApprovedUsers[_user] = true;
         emit UserAdded(_user);
     }
 
     function removeApprovedUser(address _user) external lock approved(_user) onlyZircon {
-        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved to begin with");
-        //TODO: Other checks?
-
+        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved");
         zirconApprovedUsers[_user] = false;
         emit UserRemoved(_user);
     }
 
-    function tryLock() external lock {
-        //Calling this while the contract is locked should revert the caller
-        //TODO: Ensure this is indeed the case
-    }
+    function tryLock() external lock {}
 
 
     //Privileged function used for certain Pylon vault operations and fee payment in ZRN

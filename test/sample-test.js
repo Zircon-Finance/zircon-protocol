@@ -104,11 +104,11 @@ describe("Factory", function () {
     // assert.equal(3, pairLength)
   });
 
-  it('createPair:gas', async () => {
-    const tx = await factoryInstance.createPair(...TEST_ADDRESSES.slice().reverse())
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(5236609)
-  })
+  // it('createPair:gas', async () => {
+  //   const tx = await factoryInstance.createPair(...TEST_ADDRESSES.slice().reverse())
+  //   const receipt = await tx.wait()
+  //   expect(receipt.gasUsed).to.eq(5262218)
+  // })
 
   it('should change fee', async function () {
     await factoryInstance.setFeeTo(account2.address)
@@ -303,5 +303,14 @@ describe("Pair", () => {
     expect(await tok1Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('249501683697445'))
     expect(await tok2Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('250000187312969'))
   })
+
+
+  it('should add users', async function () {
+    await expect(pair.removeApprovedUser(account2.address)).to.be.revertedWith(
+        'ZirconPair: User not approved'
+    )
+    await pair.addApprovedUser(account2.address)
+    await pair.removeApprovedUser(account2.address)
+  });
 
 })
