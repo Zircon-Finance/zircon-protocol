@@ -87,8 +87,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     event UserRemoved(address);
     event SwapNoFee(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
+//        uint amount0In,
+//        uint amount1In,
         uint amount0Out,
         uint amount1Out,
         address indexed to
@@ -132,17 +132,13 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
             balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
             balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
         }
-        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
-        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
-        require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
-        { // Scope for reserve{0,1}Adjusted, avoids stack too deep errors
-            // Removes fee-related calculations and adjustments.
-            uint balance0Adjusted = balance0;
-            uint balance1Adjusted = balance1;
-            require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
-        }
+//        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
+//        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
+//        require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
+        require(balance0.mul(balance1) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
+
         _update(balance0, balance1, _reserve0, _reserve1);
-        emit SwapNoFee(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        emit SwapNoFee(msg.sender, amount0Out, amount1Out, to);
     }
 
     //--------------------------------------------------------
@@ -225,7 +221,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address to)  external lock returns (uint amount0, uint amount1) {
+    function burn(address to) external lock returns (uint amount0, uint amount1) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings

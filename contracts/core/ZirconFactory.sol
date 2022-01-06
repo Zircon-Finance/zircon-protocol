@@ -31,15 +31,14 @@ contract ZirconFactory is IUniswapV2Factory {
         return keccak256(type(ZirconPair).creationCode);
     }
 
-    function createToken(address _token, address _pair, bool isAnchor) private returns (address poolToken) {
+    function createTokenAddress(address _token) private returns (address poolToken) {
         // Creaating Token
         bytes memory bytecode = type(ZirconPoolToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_token, allPairs.length));
         assembly {
             poolToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPoolToken(poolToken).initialize(_token, _pair, isAnchor);
-        emit PoolTokenCreated(_token, poolToken);
+
     }
 
     function createPylon(address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
@@ -69,11 +68,17 @@ contract ZirconFactory is IUniswapV2Factory {
         getPair[tokenA][tokenB] = pair;
         allPairs.push(pair);
 
-        address poolTokenA = createToken(tokenA, pair, true);
-        address poolTokenB = createToken(tokenB, pair, false);
+        address poolTokenA = createTokenAddress(tokenA);
+        address poolTokenB = createTokenAddress(tokenB);
         address pylon = createPylon(poolTokenA, poolTokenB, pair);
-        getPylon[pair] = pylon;
 
+        ZirconPoolToken(poolTokenA).initialize(tokenA, pair, pylon, true);
+        emit PoolTokenCreated(tokenA, poolTokenA);
+
+        ZirconPoolToken(poolTokenB).initialize(tokenB, pair, pylon, false);
+        emit PoolTokenCreated(tokenB, poolTokenB);
+
+        getPylon[pair] = pylon;
         emit PairCreated(tokenA, tokenB, pair, allPairs.length);
     }
 

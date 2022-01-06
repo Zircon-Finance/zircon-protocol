@@ -179,7 +179,6 @@ describe("Pair", () => {
       await pair.swap(0, expectedOutputAmount, account.address, '0x')
     })
   })
-
   it('swap:token0', async () => {
     const token0Amount = expandTo18Decimals(5)
     const token1Amount = expandTo18Decimals(10)
@@ -189,6 +188,33 @@ describe("Pair", () => {
     const expectedOutputAmount = ethers.BigNumber.from('1662497915624478906')
     await tok1Instance.transfer(pair.address, swapAmount)
     await expect(pair.swap(0, expectedOutputAmount, account.address, '0x', overrides))
+        .to.emit(tok2Instance, 'Transfer')
+        .withArgs(pair.address, account.address, expectedOutputAmount)
+        .to.emit(pair, 'Sync')
+        .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
+        .to.emit(pair, 'Swap')
+        .withArgs(account.address, swapAmount, 0, 0, expectedOutputAmount, account.address)
+
+    const reserves = await pair.getReserves()
+    expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
+    expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
+    expect(await tok1Instance.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
+    expect(await tok2Instance.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
+    const totalSupplyToken0 = await tok1Instance.totalSupply()
+    const totalSupplyToken1 = await tok2Instance.totalSupply()
+    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
+    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
+  })
+
+  it('swapNoFee:token0', async () => {
+    const token0Amount = expandTo18Decimals(5)
+    const token1Amount = expandTo18Decimals(10)
+    await addLiquidity(token0Amount, token1Amount)
+
+    const swapAmount = expandTo18Decimals(1)
+    const expectedOutputAmount = ethers.BigNumber.from('2000000000000000000')
+    await tok1Instance.transfer(pair.address, swapAmount)
+    await expect(pair.swapNoFee(0, expectedOutputAmount, account.address, '0x', overrides))
         .to.emit(tok2Instance, 'Transfer')
         .withArgs(pair.address, account.address, expectedOutputAmount)
         .to.emit(pair, 'Sync')
@@ -312,5 +338,10 @@ describe("Pair", () => {
     await pair.addApprovedUser(account2.address)
     await pair.removeApprovedUser(account2.address)
   });
+})
 
+describe("Pylon", () => {
+  it('should add float liquidity', function () {
+
+  });
 })

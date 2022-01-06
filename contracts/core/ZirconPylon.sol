@@ -47,7 +47,7 @@ contract ZirconPylon {
 
     function _safeTransfer(address token, address to, uint value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'Zircon Pylon: TRANSFER_FAILED');
     }
 
 
@@ -113,7 +113,7 @@ contract ZirconPylon {
     function supplyFloatLiquidity() external pairUnlocked {
         // Mints Float pool tokens to the user according to the value supplied
         // Value is derived from TWAP pool oracle
-        // Follows Uniswap model — tokens are pre-sent to the contract by the router.
+        // Follows Uniswap model — tokens are p re-sent to the contract by the router.
         sync();
 
         // mintFloatTokens()
@@ -162,27 +162,28 @@ contract ZirconPylon {
         // What if pool token balance is 0 ?
 
         if(floatIsReserve0) {
-            //Todo: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
+            //TODO: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
             //price = oracle.getFloatPrice(reserve0, reserve1, floatToken, anchorToken);
             //TODO: SafeMath
             totalPoolValuePrime = reserve1.mul(2).mul(poolTokenBalance/(poolTokensPrime));
             //Adjusted by the protocol's share of the entire pool.
         } else {
-            //price = oracle.getFloatPrice(reserve1, reserve0, floatToken, anchorToken);
-            //TODO: SafeMath
+            // price = oracle.getFloatPrice(reserve1, reserve0, floatToken, anchorToken);
+            // TODO: SafeMath
             totalPoolValuePrime = reserve0.mul(2).mul(poolTokenBalance/(poolTokensPrime));
         }
 
         uint kPrime = reserve0 * reserve1;
 
-        //Todo: Fix with actual integer math
+        //TODO: Fix with actual integer math
         uint feeValue = totalPoolValuePrime.mul(1 - Math.sqrt(lastK/kPrime).mul(poolTokensPrime)/lastPoolTokens);
 
         virtualAnchorBalance += feeValue.mul(virtualAnchorBalance)/totalPoolValuePrime;
         virtualFloatBalance += feeValue.mul(1-virtualAnchorBalance/totalPoolValuePrime);
 
-        //Gamma is the master variable used to define withdrawals
-        gammaMulDecimals = 10**18 - (virtualAnchorBalance.mul(10**18) / totalPoolValuePrime.mul(10**18)); //1 - ATV/TPV but multiplied by 10**18 due to integer math shit
+        // Gamma is the master variable used to define withdrawals
+        gammaMulDecimals = 10**18 - (virtualAnchorBalance.mul(10**18) /  totalPoolValuePrime.mul(10**18));
+        // 1 - ATV/TPV but multiplied by 10**18 due to integer math shit
     }
 
     // Called at the end of supply functions to supply any available 50-50 liquidity to underlying pool
@@ -190,11 +191,13 @@ contract ZirconPylon {
 
     // Called by remove functions if a withdrawal requires underlying liquidity extraction
     function _extractFloatLiquidity() private {
-        //Sends tokens from self if it has them
-        //Otherwise directs pool to send them to user
-        //TODO: maybe we can do some kind of self-flash swap to make it swap with less slippage (before liquidity is removed)?
-        //TODO: Also to avoid needless ERC-20 transfers
-        //TODO: Or just literally send tokens from the pool
+        // Sends tokens from self if it has them
+        // Otherwise directs pool to send them to user
+        // TODO: maybe we can do some kind of self-flash swap to make it swap with less slippage (before liquidity is removed)?
+        // TODO: Also to avoid needless ERC-20 transfers
+        // TODO: Or just literally send tokens from the pool
+
+
     }
 
     function _extractAnchorLiquidity() private {
