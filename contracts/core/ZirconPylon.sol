@@ -110,6 +110,20 @@ contract ZirconPylon {
         emit PylonSync(reserve0, reserve1);
     }
 
+    function mintFloatTokens() external {
+        (uint112 _reserve0,,) = getReserves(); // gas savings
+        uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
+        uint amount0 = balance0.sub(_reserve0);
+
+        (uint112 _reservePair0,,) = ZirconPair(pairAddress).getReserves(); // gas savings
+
+
+    }
+
+    function mintAnchorTokens() external {
+
+    }
+
     function supplyFloatLiquidity() external pairUnlocked {
         // Mints Float pool tokens to the user according to the value supplied
         // Value is derived from TWAP pool oracle

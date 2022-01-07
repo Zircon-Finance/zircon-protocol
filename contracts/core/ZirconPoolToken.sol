@@ -17,34 +17,6 @@ contract ZirconPoolToken is ZirconERC20, ReentrancyGuard {
     bool public isAnchor;
     address public factory;
     address public pylon;
-    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
-    uint public totalSupply;
-
-//    modifier onlyPylon() {
-//        require(msg.sender == pylon, "Zircon Pool Token: Pylon Only");
-//        _;
-//    }
-
-//    function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
-//        address feeTo = IUniswapV2Factory(factory).feeTo();
-//        feeOn = feeTo != address(0);
-//        uint _kLast = kLast; // gas savings
-//        if (feeOn) {
-//            if (_kLast != 0) {
-//                uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));
-//                uint rootKLast = Math.sqrt(_kLast);
-//                if (rootK > rootKLast) {
-//                    uint numerator = totalSupply.mul(rootK.sub(rootKLast));
-//                    uint denominator = rootK.mul(5).add(rootKLast);
-//                    uint liquidity = numerator / denominator;
-////                    if (liquidity > 0) _mint(feeTo, liquidity);
-//                }
-//            }
-//        } else if (_kLast != 0) {
-//            kLast = 0;
-//        }
-//    }
-
 
     function mint(address account, uint256 amount) nonReentrant external {
         require(msg.sender == pylon, 'ZirconPoolToken: FORBIDDEN'); // sufficient check

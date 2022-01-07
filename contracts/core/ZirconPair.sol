@@ -97,7 +97,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
     constructor() public {
         factory = msg.sender;
         zirconApprovedUsers[factory] = true;
-        zirconApprovedUsers[tx.origin] = true;
     }
 
     function addApprovedUser(address _user) external lock approved(_user) onlyZircon {
