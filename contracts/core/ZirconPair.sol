@@ -9,7 +9,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol';
 import './libraries/SafeMath.sol';
 import "./ZirconERC20.sol";
-import "./ZirconFactory.sol";
+import "./interfaces/IZirconFactory.sol";
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -112,7 +112,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
 
     function tryLock() external lock {}
 
-
     //Privileged function used for certain Pylon vault operations and fee payment in ZRN
     function swapNoFee(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock onlyZircon {
         require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -199,7 +198,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
-            address migrator = ZirconFactory(factory).migrator();
+            address migrator = IZirconFactory(factory).migrator();
             if (msg.sender == migrator) {
                 liquidity = IMigrator(migrator).desiredLiquidity();
                 require(liquidity > 0 && liquidity != uint256(-1), "ZirconPair: Bad desired liquidity");

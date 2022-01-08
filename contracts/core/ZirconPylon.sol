@@ -1,7 +1,11 @@
 pragma solidity ^0.5.16;
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './libraries/Math.sol';
-import './ZirconPair.sol';
+import './interfaces/IZirconPair.sol';
+import './interfaces/IZirconPoolToken.sol';
+import "./libraries/SafeMath.sol";
+import "./libraries/UQ112x112.sol";
+import "./interfaces/IERC20.sol";
 
 contract ZirconPylon {
     using SafeMath for uint112;
@@ -18,6 +22,7 @@ contract ZirconPylon {
 
     uint virtualAnchorBalance;
     uint virtualFloatBalance;
+    uint maximumPercentageSync;
 
     uint gammaMulDecimals; // Name represents the fact that this is always the numerator of a fraction with 10**18 as denominator.
     uint lastK;
@@ -31,11 +36,20 @@ contract ZirconPylon {
     uint public price0CumulativeLast;
     uint public price1CumulativeLast;
 
+
+    uint private unlocked = 1;
+    modifier lock() {
+        require(unlocked == 1, 'UniswapV2: LOCKED');
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
+
     event PylonSync(uint112 _reserve0, uint112 _reserve1);
 
     // Calls dummy function with lock modifier
     modifier pairUnlocked() {
-        ZirconPair(pairAddress).tryLock();
+        IZirconPair(pairAddress).tryLock();
         _;
     }
 
@@ -97,7 +111,7 @@ contract ZirconPylon {
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
-            ZirconPair pair = ZirconPair(pairAddress);
+            IZirconPair pair = IZirconPair(pairAddress);
             (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
 
             uint ratio = uint(UQ112x112.encode(_pairReserve1).uqdiv(_pairReserve0));
@@ -110,18 +124,47 @@ contract ZirconPylon {
         emit PylonSync(reserve0, reserve1);
     }
 
-    function mintFloatTokens() external {
+    function mintFloatTokens(address to) external {
+        (uint112 _reservePair0,,) = IZirconPair(pairAddress).getReserves(); // gas savings
         (uint112 _reserve0,,) = getReserves(); // gas savings
-        uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
-        uint amount0 = balance0.sub(_reserve0);
+        uint maxSync = _reserve0.mul(100).sub(_reservePair0.mul(maximumPercentageSync));
+        uint balance0 = IERC20Uniswap(floatPoolToken).balanceOf(address(this));
+        uint amountIn = balance0-_reserve0;
+        require(maxSync > amountIn, "ZirconPylon: Not allowed");
+        require(amountIn > 0, "ZirconPylon: Not Enough Liquidity");
 
-        (uint112 _reservePair0,,) = ZirconPair(pairAddress).getReserves(); // gas savings
-
-
+        IZirconPoolToken(floatPoolToken).mint(to, amountIn);
     }
 
-    function mintAnchorTokens() external {
+    function mintAnchorTokens(address to) external {
+        (,uint112 _reservePair1,) = IZirconPair(pairAddress).getReserves(); // gas savings
+        (,uint112 _reserve1,) = getReserves(); // gas savings
+        uint maxSync = _reserve1.mul(100).sub(_reservePair1.mul(maximumPercentageSync));
+        uint balance1 = IERC20Uniswap(anchorPoolToken).balanceOf(address(this));
+        uint amountIn = balance1.sub(_reserve1);
+        require(maxSync > amountIn, "ZirconPylon: Not allowed");
+        require(amountIn > 0, "ZirconPylon: Not Enough Liquidity");
 
+        IZirconPoolToken(floatPoolToken).mint(to, amountIn);
+    }
+
+    function mintAsync(address to, bool shouldMintAnchor) external lock returns (uint liquidity){
+        IZirconPair pair = IZirconPair(pairAddress);
+        (uint112 _reservePair0, uint112 _reservePair1,) = pair.getReserves(); // gas savings
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        uint balance0 = IERC20Uniswap(floatPoolToken).balanceOf(address(this));
+        uint balance1 = IERC20Uniswap(anchorPoolToken).balanceOf(address(this));
+        uint amountIn0 = balance0.sub(_reserve0);
+        uint amountIn1 = balance1.sub(_reserve1);
+        require(amountIn0 > 0 && amountIn1 > 0, "ZirconPylon: Not Enough Liquidity");
+        uint _totalSupply = pair.totalSupply();
+        liquidity = Math.min(amountIn0.mul(_totalSupply) / _reserve0, amountIn1.mul(_totalSupply) / _reserve1);
+
+        if (shouldMintAnchor) {
+            //TODO: Mint anchor Tokens
+        }else{
+            //TODO: Mint Float Tokens
+        }
     }
 
     function supplyFloatLiquidity() external pairUnlocked {
@@ -158,20 +201,20 @@ contract ZirconPylon {
         // Only continues if it's called by pair itself or if the pair is unlocked
         // Which ensures it's not called within UniswapV2Callee
 
-        if(msg.sender != pairAddress) { ZirconPair(pairAddress).tryLock(); }
+        if(msg.sender != pairAddress) { IZirconPair(pairAddress).tryLock(); }
 
         // So this thing needs to get pool reserves, get the price of the float asset in anchor terms
         // Then it applies the base formula:
         // Adds fees to virtualFloat and virtualAnchor
         // And then calculates Gamma so that the proportions are correct according to the formula
 
-        (uint112 reserve0, uint112 reserve1,) = ZirconPair(pairAddress).getReserves();
+        (uint112 reserve0, uint112 reserve1,) = IZirconPair(pairAddress).getReserves();
         uint price;
         uint totalPoolValue;
         uint totalPoolValuePrime;
 
-        uint poolTokensPrime = ZirconPair(pairAddress).totalSupply();
-        uint poolTokenBalance = ZirconPair(pairAddress).balanceOf(address(this));
+        uint poolTokensPrime = IZirconPair(pairAddress).totalSupply();
+        uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
 
         // What if pool token balance is 0 ?
 
@@ -189,7 +232,9 @@ contract ZirconPylon {
 
         uint kPrime = reserve0 * reserve1;
 
-        //TODO: Fix with actual integer math
+        // TODO: Fix with actual integer math
+        // TODO: lastK & lastPoolTokens
+
         uint feeValue = totalPoolValuePrime.mul(1 - Math.sqrt(lastK/kPrime).mul(poolTokensPrime)/lastPoolTokens);
 
         virtualAnchorBalance += feeValue.mul(virtualAnchorBalance)/totalPoolValuePrime;

@@ -1,29 +1,27 @@
 pragma solidity ^0.5.16;
-
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-//import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import './libraries/Math.sol';
-import "./libraries/SafeMath.sol";
 import "./ZirconERC20.sol";
-import "./ZirconPair.sol";
 
-contract ZirconPoolToken is ZirconERC20, ReentrancyGuard {
-    using SafeMath for uint;
-
+contract ZirconPoolToken is ZirconERC20 {
     address public token;
     address public pair;
     bool public isAnchor;
     address public factory;
     address public pylon;
 
-    function mint(address account, uint256 amount) nonReentrant external {
+    uint private unlocked = 1;
+    modifier lock() {
+        require(unlocked == 1, 'UniswapV2: LOCKED');
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
+
+    function mint(address account, uint256 amount) lock external {
         require(msg.sender == pylon, 'ZirconPoolToken: FORBIDDEN'); // sufficient check
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) nonReentrant external {
+    function burn(address account, uint256 amount) lock external {
         require(msg.sender == pylon, 'ZirconPoolToken: FORBIDDEN'); // sufficient check
         _burn(account, amount);
     }
