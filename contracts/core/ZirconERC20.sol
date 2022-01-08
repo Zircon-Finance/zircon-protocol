@@ -1,6 +1,4 @@
 pragma solidity =0.5.16;
-//TODO: Double check version code, pumped from uniswap erc20v2pair code
-
 import './interfaces/IUniswapV2ERC20.sol';
 import './libraries/SafeMath.sol';
 

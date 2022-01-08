@@ -7,7 +7,7 @@ const TEST_ADDRESSES = [
   '0x2000000000000000000000000000000000000000'
 ]
 
-let factory, tok1Instance, tok1, tok2, tok2Instance,
+let factory, factoryPylonInstance,  token0, token1,
     pylonInstance, poolTokenInstance1, poolTokenInstance2,
     factoryInstance, deployerAddress, account2, account,
     lpAddress, pair;
@@ -25,31 +25,39 @@ beforeEach(async () => {
   factory = await ethers.getContractFactory('ZirconFactory');
   factoryInstance = await factory.deploy(deployerAddress);
 
+  let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
+  factoryPylonInstance = await factoryPylon.deploy();
+  //
   //Deploy Tokens
-  tok1 = await ethers.getContractFactory('Token');
-  tok1Instance = await tok1.deploy('Token1', 'TOK1');
-  tok2 = await ethers.getContractFactory('Token');
-  tok2Instance = await tok2.deploy('Token2', 'TOK2');
+  let tok1 = await ethers.getContractFactory('Token');
+  let tok1Instance = await tok1.deploy('Token1', 'TOK1');
+  let tok2 = await ethers.getContractFactory('Token');
+  let tok2Instance = await tok2.deploy('Token2', 'TOK2');
 
   await factoryInstance.createPair(tok1Instance.address, tok2Instance.address);
-  lpAddress = await factoryInstance.getPair(
-      tok1Instance.address,
-      tok2Instance.address
-  );
-  const pylonAddress = await factoryInstance.getPylon(lpAddress);
+  lpAddress = await factoryInstance.getPair(tok1Instance.address, tok2Instance.address)
+  let pairContract = await ethers.getContractFactory("ZirconPair");
+  pair = await pairContract.attach(lpAddress);
+
+  const token0Address = await pair.token0();
+  token0 = tok1Instance.address === token0Address ? tok1Instance : tok2Instance
+  token1 = tok2Instance.address === token0Address ? tok1Instance : tok2Instance
+
+  await factoryPylonInstance.addPylon(lpAddress, token0.address, token1.address);
+  let pylonAddress = await factoryPylonInstance.getPylon(token0.address, token1.address)
+
   let zPylon = await ethers.getContractFactory('ZirconPylon')
   let poolToken1 = await ethers.getContractFactory('ZirconPoolToken')
   let poolToken2 = await ethers.getContractFactory('ZirconPoolToken')
+  pylonInstance = await zPylon.attach(pylonAddress);
 
-  pylonInstance = zPylon.attach(pylonAddress);
-  let poolAddress1 = await pylonInstance.floatPoolToken();
   let poolAddress2 = await pylonInstance.anchorPoolToken();
+
+  let poolAddress1 = await pylonInstance.floatPoolToken();
 
   poolTokenInstance1 = poolToken1.attach(poolAddress1)
   poolTokenInstance2 = poolToken2.attach(poolAddress2)
 
-  let pairFactory = await ethers.getContractFactory("ZirconPair");
-  pair = await pairFactory.attach(lpAddress);
 
 });
 
@@ -76,7 +84,7 @@ describe("Factory", function () {
     }
 
     try {
-      await factoryInstance.createPair(tok1Instance.address, ethers.constants.AddressZero)
+      await factoryInstance.createPair(token0.address, ethers.constants.AddressZero)
       assert(false)
     }catch (e) {
       assert(e)
@@ -85,17 +93,17 @@ describe("Factory", function () {
 
   it("already existing pair", async function () {
     try {
-      await factoryInstance.createPair(tok1Instance.address, tok2Instance.address)
+      await factoryInstance.createPair(token0.address, token1.address)
       assert(false)
     }catch (e) {
       assert(e)
     }
   });
 
-  it("creating a new inverted pair", async function () {
-    await factoryInstance.createPair(tok2Instance.address, tok1Instance.address)
-    let pairLength = await factoryInstance.allPairsLength()
-    // assert.equal(2, pairLength)
+  it("creating an existing pair", async function () {
+    await expect( factoryInstance.createPair(token0.address, token1.address)).to.be.revertedWith(
+        'ZF: PAIR_EXISTS'
+    )
   });
 
   it("creating a new pair", async function () {
@@ -125,10 +133,11 @@ describe("Factory", function () {
 describe("Pair", () => {
   // Same as Uniswap v2 - CORE
   it('mint', async () => {
+
     const token0Amount = expandTo18Decimals(1)
     const token1Amount = expandTo18Decimals(4)
-    await tok1Instance.transfer(lpAddress, token0Amount)
-    await tok2Instance.transfer(lpAddress, token1Amount)
+    await token0.transfer(lpAddress, token0Amount)
+    await token1.transfer(lpAddress, token1Amount)
 
     const expectedLiquidity = expandTo18Decimals(2)
     await expect(pair.mint(account.address))
@@ -143,16 +152,16 @@ describe("Pair", () => {
 
     expect(await pair.totalSupply()).to.eq(expectedLiquidity)
     expect(await pair.balanceOf(account.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY))
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(token0Amount)
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(token1Amount)
+    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
+    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount)
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount)
     expect(reserves[1]).to.eq(token1Amount)
   })
 
   async function addLiquidity(token0Amount, token1Amount) {
-    await tok1Instance.transfer(pair.address, token0Amount)
-    await tok2Instance.transfer(pair.address, token1Amount)
+    await token0.transfer(pair.address, token0Amount)
+    await token1.transfer(pair.address, token1Amount)
     await pair.mint(account.address)
   }
 
@@ -172,7 +181,7 @@ describe("Pair", () => {
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
       await addLiquidity(token0Amount, token1Amount)
 
-      await tok1Instance.transfer(pair.address, swapAmount)
+      await token0.transfer(pair.address, swapAmount)
       await expect(pair.swap(0, expectedOutputAmount.add(1), account.address, '0x')).to.be.revertedWith(
           'UniswapV2: K'
       )
@@ -186,9 +195,9 @@ describe("Pair", () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = ethers.BigNumber.from('1662497915624478906')
-    await tok1Instance.transfer(pair.address, swapAmount)
+    await token0.transfer(pair.address, swapAmount)
     await expect(pair.swap(0, expectedOutputAmount, account.address, '0x', overrides))
-        .to.emit(tok2Instance, 'Transfer')
+        .to.emit(token1, 'Transfer')
         .withArgs(pair.address, account.address, expectedOutputAmount)
         .to.emit(pair, 'Sync')
         .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
@@ -198,12 +207,12 @@ describe("Pair", () => {
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
     expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
-    const totalSupplyToken0 = await tok1Instance.totalSupply()
-    const totalSupplyToken1 = await tok2Instance.totalSupply()
-    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
-    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
+    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
+    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
+    const totalSupplyToken0 = await token0.totalSupply()
+    const totalSupplyToken1 = await token1.totalSupply()
+    expect(await token0.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
+    expect(await token1.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
   })
 
   it('swapNoFee:token0', async () => {
@@ -213,9 +222,9 @@ describe("Pair", () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = ethers.BigNumber.from('2000000000000000000')
-    await tok1Instance.transfer(pair.address, swapAmount)
+    await token0.transfer(pair.address, swapAmount)
     await expect(pair.swapNoFee(0, expectedOutputAmount, account.address, '0x', overrides))
-        .to.emit(tok2Instance, 'Transfer')
+        .to.emit(token1, 'Transfer')
         .withArgs(pair.address, account.address, expectedOutputAmount)
         .to.emit(pair, 'Sync')
         .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
@@ -225,12 +234,12 @@ describe("Pair", () => {
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
     expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
-    const totalSupplyToken0 = await tok1Instance.totalSupply()
-    const totalSupplyToken1 = await tok2Instance.totalSupply()
-    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
-    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
+    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
+    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
+    const totalSupplyToken0 = await token0.totalSupply()
+    const totalSupplyToken1 = await token1.totalSupply()
+    expect(await token0.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
+    expect(await token1.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
   })
 
   it('swap:token1', async () => {
@@ -240,9 +249,9 @@ describe("Pair", () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = ethers.BigNumber.from('453305446940074565')
-    await tok2Instance.transfer(pair.address, swapAmount)
+    await token1.transfer(pair.address, swapAmount)
     await expect(pair.swap(expectedOutputAmount, 0, account.address, '0x', overrides))
-        .to.emit(tok1Instance, 'Transfer')
+        .to.emit(token0, 'Transfer')
         .withArgs(pair.address, account.address, expectedOutputAmount)
         .to.emit(pair, 'Sync')
         .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
@@ -252,12 +261,12 @@ describe("Pair", () => {
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
     expect(reserves[1]).to.eq(token1Amount.add(swapAmount))
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(token0Amount.sub(expectedOutputAmount))
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
-    const totalSupplyToken0 = await tok1Instance.totalSupply()
-    const totalSupplyToken1 = await tok2Instance.totalSupply()
-    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
-    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
+    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.sub(expectedOutputAmount))
+    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
+    const totalSupplyToken0 = await token0.totalSupply()
+    const totalSupplyToken1 = await token1.totalSupply()
+    expect(await token0.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
+    expect(await token1.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
   })
 
   it('burn', async () => {
@@ -270,9 +279,9 @@ describe("Pair", () => {
     await expect(pair.burn(account.address, overrides))
         .to.emit(pair, 'Transfer')
         .withArgs(pair.address, ethers.constants.AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
-        .to.emit(tok1Instance, 'Transfer')
+        .to.emit(token0, 'Transfer')
         .withArgs(pair.address, account.address, token0Amount.sub(1000))
-        .to.emit(tok1Instance, 'Transfer')
+        .to.emit(token0, 'Transfer')
         .withArgs(pair.address, account.address, token1Amount.sub(1000))
         .to.emit(pair, 'Sync')
         .withArgs(1000, 1000)
@@ -281,12 +290,12 @@ describe("Pair", () => {
 
     expect(await pair.balanceOf(account.address)).to.eq(0)
     expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(1000)
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(1000)
-    const totalSupplyToken0 = await tok1Instance.totalSupply()
-    const totalSupplyToken1 = await tok2Instance.totalSupply()
-    expect(await tok1Instance.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(1000))
-    expect(await tok2Instance.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(1000))
+    expect(await token0.balanceOf(pair.address)).to.eq(1000)
+    expect(await token1.balanceOf(pair.address)).to.eq(1000)
+    const totalSupplyToken0 = await token0.totalSupply()
+    const totalSupplyToken1 = await token1.totalSupply()
+    expect(await token0.balanceOf(account.address)).to.eq(totalSupplyToken0.sub(1000))
+    expect(await token1.balanceOf(account.address)).to.eq(totalSupplyToken1.sub(1000))
   })
 
   it('feeTo:off', async () => {
@@ -296,7 +305,7 @@ describe("Pair", () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = ethers.BigNumber.from('996006981039903216')
-    await tok2Instance.transfer(pair.address, swapAmount)
+    await token1.transfer(pair.address, swapAmount)
     await pair.swap(expectedOutputAmount, 0, account.address, '0x', overrides)
 
     const expectedLiquidity = expandTo18Decimals(1000)
@@ -315,7 +324,7 @@ describe("Pair", () => {
 
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = ethers.BigNumber.from('996006981039903216')
-    await tok2Instance.transfer(pair.address, swapAmount)
+    await token1.transfer(pair.address, swapAmount)
     await pair.swap(expectedOutputAmount, 0, account.address, '0x', overrides)
 
     const expectedLiquidity = expandTo18Decimals(1000)
@@ -326,18 +335,18 @@ describe("Pair", () => {
 
     // using 1000 here instead of the symbolic MINIMUM_LIQUIDITY because the amounts only happen to be equal...
     // ...because the initial liquidity amounts were equal
-    expect(await tok1Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('249501683697445'))
-    expect(await tok2Instance.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('250000187312969'))
+    expect(await token0.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('249501683697445'))
+    expect(await token1.balanceOf(pair.address)).to.eq(ethers.BigNumber.from(1000).add('250000187312969'))
   })
 
 
-  it('should add users', async function () {
-    await expect(pair.removeApprovedUser(account2.address)).to.be.revertedWith(
-        'ZirconPair: User not approved'
-    )
-    await pair.addApprovedUser(account2.address)
-    await pair.removeApprovedUser(account2.address)
-  });
+  // it('should add users', async function () {
+  //   await expect(pair.removeApprovedUser(account2.address)).to.be.revertedWith(
+  //       'ZirconPair: User not approved'
+  //   )
+  //   await pair.addApprovedUser(account2.address)
+  //   await pair.removeApprovedUser(account2.address)
+  // });
 })
 
 describe("Pylon", () => {
