@@ -397,6 +397,9 @@ describe("Pylon", () => {
     let t = await pair.balanceOf(pylonInstance.address)
     let res = await pylonInstance.getReserves()
     console.log("soap", t);
-    console.log("soap", t);
+
+    let t0 = await token0.balanceOf(pylonInstance.address)
+    let t1 = await token1.balanceOf(pylonInstance.address)
+    console.log("noap", t0, t1)
   });
 })

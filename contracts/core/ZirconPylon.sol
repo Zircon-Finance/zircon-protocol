@@ -95,7 +95,6 @@ contract ZirconPylon {
 //        (uint112 _reserve0, uint112 _reserve1, ) = getReserves();
 //    }
 
-    //TODO: check for overflow and precision
     function _getMaximum(uint _ratio, uint _token0, uint _token1) private returns (uint maxX, uint maxY)  {
         uint ty = _ratio*_token0;
         if(ty>_token1){
@@ -107,7 +106,6 @@ contract ZirconPylon {
         }
     }
 
-    //TODO: Test this
     // update reserves and, on the first call per block, price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
@@ -119,17 +117,18 @@ contract ZirconPylon {
         (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
         if (timeElapsed > 0 && balance0 != 0 && balance1 != 0) {
             // * never overflows, and + overflow is desired
-
-//            uint224 ratio = UQ112x112.encode(_pairReserve1).uqdiv(_pairReserve0);
+            // uint224 ratio = UQ112x112.encode(_pairReserve1).uqdiv(_pairReserve0);
             uint ratio = _pairReserve1/_pairReserve0;
             (uint tx, uint ty) = _getMaximum(ratio, balance0, balance1);
-
             emit PylonUpdate(ratio, ty, tx);
 
-//          emit PylonUpdate(tx, ty);
-          _safeTransfer(pt.token(), pairAddress, tx);
-          _safeTransfer(at.token(), pairAddress, ty);
-          pair.mint(address(this));
+            // emit PylonUpdate(tx, ty);
+            _safeTransfer(pt.token(), pairAddress, tx);
+            _safeTransfer(at.token(), pairAddress, ty);
+            pair.mint(address(this));
+
+            reserve0 = balance0.sub(tx);
+            reserve1 = balance1.sub(ty);
         }
 
         blockTimestampLast = blockTimestamp;
