@@ -7,11 +7,14 @@ import './ZirconPylon.sol';
 contract ZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
+    uint public maxFloat;
+    uint public maxAnchor;
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
 
-    constructor() public {
-//        feeToSetter = _feeToSetter;
+    constructor(uint _maxFloat, uint _maxAnchor) public {
+        maxFloat = _maxFloat;
+        maxAnchor = _maxAnchor;
     }
 
     function allPylonsLength() external view returns (uint) {
@@ -23,7 +26,7 @@ contract ZirconPylonFactory {
     }
 
     function createTokenAddress(address _token) private returns (address poolToken) {
-        // Creaating Token
+        // Creating Token
         bytes memory bytecode = type(ZirconPoolToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_token, allPylons.length));
         assembly {

@@ -16,7 +16,42 @@ interface IMigrator {
     function desiredLiquidity() external view returns (uint256);
 }
 
-contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affect ABI
+contract Approved {
+    //-------------------------------------------------
+    //-------------------Open Zircon Diff--------------
+    //-------------------------------------------------
+
+    mapping(address => bool) public zirconApprovedUsers; // Repository for vault, router and other addresses that can call swapNoFee
+
+    event UserAdded(address);
+    event UserRemoved(address);
+
+    modifier onlyZircon() {
+        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
+        _;
+    }
+
+    //Flexible system, no isContract checks for potential future uses
+    modifier approved(address _user) {
+        require(_user != address(this), "ZirconPair: Can't remove approval of self");
+        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
+        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
+        _;
+    }
+
+    function addApprovedUser(address _user) external approved(_user) onlyZircon {
+        zirconApprovedUsers[_user] = true;
+        emit UserAdded(_user);
+    }
+
+    function removeApprovedUser(address _user) external approved(_user) onlyZircon {
+        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved");
+        zirconApprovedUsers[_user] = false;
+        emit UserRemoved(_user);
+    }
+}
+
+contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change does not affect ABI
     using SafeMath for uint;
     using UQ112x112 for uint224;
 
@@ -65,26 +100,9 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
+    event TEST(uint ratio);
 
-    //--------------------------------------------------
-    //-------------------Open Zircon Diff--------------------
-    mapping(address => bool) public zirconApprovedUsers; // Repository for vault, router and other addresses that can call swapNoFee
 
-    //Flexible system, no isContract checks for potential future uses
-    modifier approved(address _user) {
-        require(_user != address(this), "ZirconPair: Can't remove approval of self");
-        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
-        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
-        _;
-    }
-
-    modifier onlyZircon() {
-        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
-        _;
-    }
-
-    event UserAdded(address);
-    event UserRemoved(address);
     event SwapNoFee(
         address indexed sender,
 //        uint amount0In,
@@ -100,16 +118,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         zirconApprovedUsers[tx.origin] = true; //TODO: Remove this, only for testing purpose
     }
 
-    function addApprovedUser(address _user) external lock approved(_user) onlyZircon {
-        zirconApprovedUsers[_user] = true;
-        emit UserAdded(_user);
-    }
 
-    function removeApprovedUser(address _user) external lock approved(_user) onlyZircon {
-        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved");
-        zirconApprovedUsers[_user] = false;
-        emit UserRemoved(_user);
-    }
 
     function tryLock() external lock {}
 
@@ -158,8 +167,10 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
+            uint motherfucker = uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0));
             price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
             price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+            emit TEST(motherfucker);
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);

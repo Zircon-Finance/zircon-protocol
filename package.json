@@ -19,6 +19,7 @@
   },
   "scripts": {
     "deploy": "npx hardhat run --network dev scripts/deploy-script.js",
-    "test": "mocha"
+    "test": "mocha",
+    "ctest": " npx hardhat compile && npm test"
   }
 }

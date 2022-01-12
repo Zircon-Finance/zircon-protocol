@@ -18,6 +18,12 @@ const overrides = {
 }
 function expandTo18Decimals(n) {return ethers.BigNumber.from(n).mul(ethers.BigNumber.from(10).pow(18))}
 
+async function addLiquidity(token0Amount, token1Amount) {
+  await token0.transfer(pair.address, token0Amount)
+  await token1.transfer(pair.address, token1Amount)
+  await pair.mint(account.address)
+}
+
 beforeEach(async () => {
   [account, account2] = await ethers.getSigners();
   deployerAddress = account.address;
@@ -26,7 +32,7 @@ beforeEach(async () => {
   factoryInstance = await factory.deploy(deployerAddress);
 
   let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
-  factoryPylonInstance = await factoryPylon.deploy();
+  factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3));
   //
   //Deploy Tokens
   let tok1 = await ethers.getContractFactory('Token');
@@ -131,6 +137,7 @@ describe("Factory", function () {
 });
 
 describe("Pair", () => {
+
   // Same as Uniswap v2 - CORE
   it('mint', async () => {
 
@@ -158,12 +165,6 @@ describe("Pair", () => {
     expect(reserves[0]).to.eq(token0Amount)
     expect(reserves[1]).to.eq(token1Amount)
   })
-
-  async function addLiquidity(token0Amount, token1Amount) {
-    await token0.transfer(pair.address, token0Amount)
-    await token1.transfer(pair.address, token1Amount)
-    await pair.mint(account.address)
-  }
 
   const swapTestCases = [
     [1, 5, 10, '1662497915624478906'],
@@ -366,17 +367,36 @@ describe("Pair", () => {
   })
 
 
-  // it('should add users', async function () {
-  //   await expect(pair.removeApprovedUser(account2.address)).to.be.revertedWith(
-  //       'ZirconPair: User not approved'
-  //   )
-  //   await pair.addApprovedUser(account2.address)
-  //   await pair.removeApprovedUser(account2.address)
-  // });
+  it('should add users', async function () {
+    await expect(pair.removeApprovedUser(account2.address)).to.be.revertedWith(
+        'ZirconPair: User not approved'
+    )
+    await pair.addApprovedUser(account2.address)
+    await pair.removeApprovedUser(account2.address)
+  });
 })
 
 describe("Pylon", () => {
-  it('should add float liquidity', function () {
+  beforeEach(async () => {
+    const token0Amount = expandTo18Decimals(1700)
+    const token1Amount = expandTo18Decimals(5300)
+    await addLiquidity(token0Amount, token1Amount)
+  })
 
+  it('should add float liquidity', async function () {
+    const token0Amount = expandTo18Decimals(4)
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await pylonInstance.mintFloatTokens(account.address);
+    let b = await poolTokenInstance1.balanceOf(account.address);
+    await token1.transfer(pylonInstance.address, token0Amount)
+    await expect(pylonInstance.mintAnchorTokens(account.address))
+        .to.emit(pylonInstance, 'MintAT')
+        .to.emit(pylonInstance, 'PylonUpdate')
+        // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
+
+    let t = await pair.balanceOf(pylonInstance.address)
+    let res = await pylonInstance.getReserves()
+    console.log("soap", t);
+    console.log("soap", t);
   });
 })

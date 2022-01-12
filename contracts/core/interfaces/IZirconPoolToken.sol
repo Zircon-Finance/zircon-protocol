@@ -6,6 +6,7 @@ interface IZirconPoolToken {
     function token() external view returns (address);
     function pair() external view returns (address);
     function pylon() external view returns (address);
+    function totalSupply() external view returns (uint);
 
     function mint(address account, uint256 amount) external;
     function burn(address account, uint256 amount) external;
