@@ -3,18 +3,23 @@ pragma solidity =0.5.16;
 //import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import './ZirconPoolToken.sol';
 import './ZirconPylon.sol';
+import './interfaces/IZirconFactory.sol';
 
 contract ZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
     uint public maxFloat;
+    address public feeToo;
+    address public factory;
     uint public maxAnchor;
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
 
-    constructor(uint _maxFloat, uint _maxAnchor) public {
+    constructor(uint _maxFloat, uint _maxAnchor, address _factory) public {
         maxFloat = _maxFloat;
         maxAnchor = _maxAnchor;
+        factory = _factory;
+        feeToo = IZirconFactory(_factory).feeTo();
     }
 
     function allPylonsLength() external view returns (uint) {
