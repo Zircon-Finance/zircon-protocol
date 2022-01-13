@@ -21,6 +21,10 @@ contract ZirconPylon {
     address public factory;
     address public floatPoolToken;
     address public anchorPoolToken;
+    address public token0;
+    address public token1;
+    uint public maxFloatSync;
+    uint public maxAnchorSync;
 
     uint virtualAnchorBalance;
     uint virtualFloatBalance;
@@ -47,8 +51,7 @@ contract ZirconPylon {
     }
 
     event PylonSync(uint112 _reserve0, uint112 _reserve1);
-    event MintAT(uint112 _reserve0, uint112 _reserve1);
-    event MintFT(uint112 _reserve0, uint112 _reserve1);
+    event MintPT(uint112 _reserve0, uint112 _reserve1);
     event PylonUpdate(uint tx, uint ty, uint tp);
 
     // Calls dummy function with lock modifier
@@ -81,19 +84,25 @@ contract ZirconPylon {
     }
 
     // called once by the factory at time of deployment
-    function initialize(address _floatPoolToken, address _anchorPoolToken, address _pairAddress) external {
+    function initialize(address _floatPoolToken, address _anchorPoolToken, address _token0, address _token1, address _pairAddress) external {
         require(msg.sender == factory, 'Zircon: FORBIDDEN'); // sufficient check
         floatPoolToken = _floatPoolToken;
         anchorPoolToken = _anchorPoolToken;
         pairAddress = _pairAddress;
+        token0 = _token0;
+        token1 = _token1;
+        maxFloatSync = ZirconPylonFactory(factory).maxFloat();
+        maxAnchorSync = ZirconPylonFactory(factory).maxAnchor();
     }
 
-    //    function update() private {
-    //        // TODO: check current balances
-    //        // send balance to Pair Contract if 50-50 Liquidity
-    //        // remain with the other part
-    //        (uint112 _reserve0, uint112 _reserve1, ) = getReserves();
-    //    }
+    function _mintFee(uint amount, address poolToken) private returns (bool feeOn){
+        address feeTo = ZirconPylonFactory(factory).feeToo();
+        IZirconPoolToken pt = IZirconPoolToken(poolToken);
+        feeOn = feeTo != address(0);
+        if (feeOn) {
+            pt.mint(feeTo, amount);
+        }
+    }
 
     function _getMaximum(uint _ratio, uint _token0, uint _token1) private returns (uint maxX, uint maxY)  {
         uint ty = _ratio*_token0;
@@ -135,56 +144,36 @@ contract ZirconPylon {
         blockTimestampLast = blockTimestamp;
     }
 
-    function mintFloatTokens(address to) external returns (uint liquidity){
-        ZirconPylonFactory zpf = ZirconPylonFactory(factory);
-        IZirconPoolToken at = IZirconPoolToken(anchorPoolToken);
-        IZirconPoolToken pt = IZirconPoolToken(floatPoolToken);
-
-        uint balance0 = IERC20Uniswap(pt.token()).balanceOf(address(this));
-        uint balance1 = IERC20Uniswap(at.token()).balanceOf(address(this));
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        uint amountIn = balance0.sub(_reserve0);
+    function _mintPoolToken(uint _balance, uint112 _reserve, uint112 _pairReserve, address _poolTokenAddress, address _to) private returns (uint liquidity) {
+        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
+        uint amountIn = _balance.sub(_reserve);
         uint fee = amountIn/1000;
         uint toTransfer = amountIn-fee;
         require(toTransfer > 0, "ZP: Not Enough Liquidity");
-
-        (uint112 _reservePair0,,) = IZirconPair(pairAddress).getReserves();
-        uint maxSync = (_reservePair0 == 0 || _reserve0 > _reservePair0) ? zpf.maxFloat().mul(100) :
-        _reservePair0.mul(maximumPercentageSync).sub(_reserve0.mul(100));
+        uint maxSync = (_pairReserve == 0 || _reserve > _pairReserve) ? maxFloatSync.mul(100) :
+        _pairReserve.mul(maximumPercentageSync).sub(_reserve.mul(100));
         liquidity = (maxSync > toTransfer.mul(100)) ? Math.sqrt(maxSync) : Math.sqrt(toTransfer);
 
-        {
-            uint totalSupply = pt.totalSupply();
-            uint _liquidity = liquidity;
-            address _to = to;
+        uint totalSupply = pt.totalSupply();
 
-            pt.mint(_to, _liquidity);
-            pt.mint(zpf.feeToo(), _liquidity);
-        }
-        emit MintFT(reserve0, reserve1);
-        _update(balance0, balance1, reserve0, reserve1);
+        pt.mint(_to, liquidity);
+        _mintFee(fee, _poolTokenAddress);
+        emit MintPT(reserve0, reserve1);
+
     }
 
-    function mintAnchorTokens(address to) external returns (uint liquidity) {
-        ZirconPylonFactory zpf = ZirconPylonFactory(factory);
-        IZirconPoolToken pt = IZirconPoolToken(floatPoolToken);
-        IZirconPoolToken at = IZirconPoolToken(anchorPoolToken);
-
-        uint balance0 = IERC20Uniswap(pt.token()).balanceOf(address(this));
-        uint balance1 = IERC20Uniswap(at.token()).balanceOf(address(this));
+    function mintPoolTokens(address to, bool isAnchor) external returns (uint liquidity) {
+        uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
+        uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        uint amountIn = balance1.sub(_reserve1);
-        uint fee = amountIn/1000;
-        uint toTransfer = amountIn-fee;
-        require(toTransfer > 0, "ZP: Not Enough Liquidity");
+        (uint112 _reservePair0, uint112 _reservePair1,) = IZirconPair(pairAddress).getReserves();
 
-        (,uint112 _reservePair1,) = IZirconPair(pairAddress).getReserves();
-        uint maxSync = (_reservePair1 == 0 || _reserve1> _reservePair1) ? zpf.maxFloat().mul(100) : _reservePair1.mul(maximumPercentageSync).sub(_reserve1.mul(100));
-        uint totalSupply = pt.totalSupply();
-        liquidity = (maxSync > toTransfer.mul(100)) ? Math.sqrt(maxSync) : Math.sqrt(toTransfer);
-        pt.mint(to, liquidity);
-        pt.mint(zpf.feeToo(), fee);
-        emit MintAT(reserve0, reserve1);
+        if (isAnchor) {
+            liquidity = _mintPoolToken(balance1, _reserve1, _reservePair1, anchorPoolToken, to);
+        }else{
+            liquidity = _mintPoolToken(balance0, _reserve0, _reservePair0, floatPoolToken, to);
+        }
+
         _update(balance0, balance1, reserve0, reserve1);
     }
 
@@ -209,7 +198,7 @@ contract ZirconPylon {
                 uint ratio = _pairReserve0/_pairReserve1 ;
                 uint amount1InAnchor = ratio.mul(amountIn1);
                 at.mint(_to, amount1InAnchor);
-                emit MintAT(reserve0, reserve1);
+                emit MintPT(reserve0, reserve1);
             }
         }else{
             {
@@ -218,7 +207,7 @@ contract ZirconPylon {
                 uint ratio = _pairReserve1/_pairReserve0 ;
                 uint amount0InFloat = ratio.mul(amountIn0);
                 pt.mint(_to, amount0InFloat);
-                emit MintFT(reserve1, reserve0);
+                emit MintPT(reserve1, reserve0);
             }
         }
 

@@ -8,10 +8,10 @@ import './interfaces/IZirconFactory.sol';
 contract ZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
-    uint public maxFloat;
     address public feeToo;
     address public factory;
-    uint public maxAnchor;
+    uint public maxFloat;
+    uint public maxAnchor; //TODO: see if better just to have only one variable
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
 
@@ -39,14 +39,14 @@ contract ZirconPylonFactory {
         }
     }
 
-    function createPylon(address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
+    function createPylon(address _fptA, address _fptB, address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
         // Creating Token
         bytes memory bytecode = type(ZirconPylon).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB, _pair));
         assembly {
             pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPylon(pylon).initialize(_tokenA, _tokenB, _pair);
+        ZirconPylon(pylon).initialize(_fptA, _fptB, _tokenA, _tokenB, _pair);
         emit PylonCreated(_tokenA, _tokenB, pylon);
     }
 
@@ -56,7 +56,7 @@ contract ZirconPylonFactory {
 
         address poolTokenA = createTokenAddress(_tokenA);
         address poolTokenB = createTokenAddress(_tokenB);
-        pylonAddress = createPylon(poolTokenA, poolTokenB, _pairAddress);
+        pylonAddress = createPylon(poolTokenA, poolTokenB, _tokenA, _tokenB, _pairAddress);
 
         ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, true);
         emit PoolTokenCreated(_tokenA, poolTokenA);

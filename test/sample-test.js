@@ -32,8 +32,9 @@ beforeEach(async () => {
   factoryInstance = await factory.deploy(deployerAddress);
 
   let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
-  factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3), factoryInstance.address);
-  //
+  factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3),
+      factoryInstance.address);
+
   //Deploy Tokens
   let tok1 = await ethers.getContractFactory('Token');
   let tok1Instance = await tok1.deploy('Token1', 'TOK1');
@@ -386,10 +387,12 @@ describe("Pylon", () => {
   it('should add float liquidity', async function () {
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
-    await pylonInstance.mintFloatTokens(account.address);
+    console.log(await pylonInstance.token0());
+
+    await pylonInstance.mintPoolTokens(account.address, false);
     let b = await poolTokenInstance1.balanceOf(account.address);
     await token1.transfer(pylonInstance.address, token0Amount)
-    await expect(pylonInstance.mintAnchorTokens(account.address))
+    await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
         // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
@@ -411,10 +414,7 @@ describe("Pylon", () => {
         // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
 
     let t = await pair.balanceOf(pylonInstance.address)
-    console.log("soap", t);
-
     let t0 = await token0.balanceOf(pylonInstance.address)
     let t1 = await token1.balanceOf(pylonInstance.address)
-    console.log("noap", t0, t1)
   });
 })
