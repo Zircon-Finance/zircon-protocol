@@ -119,8 +119,6 @@ contract ZirconPylon {
         (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
 
         if (timeElapsed > 0 && balance0 != 0 && balance1 != 0) {
-            // * never overflows, and + overflow is desired
-            // uint224 ratio = UQ112x112.encode(_pairReserve1).uqdiv(_pairReserve0);
             uint ratio = _pairReserve1/_pairReserve0;
             (uint tx, uint ty) = _getMaximum(ratio, balance0, balance1);
             emit PylonUpdate(ratio, ty, tx);
@@ -137,7 +135,7 @@ contract ZirconPylon {
     }
 
     // Minting
-    
+
     function _mintFee(uint amount, address poolToken) private returns (bool feeOn){
         address feeTo = ZirconPylonFactory(factory).feeToo();
         IZirconPoolToken pt = IZirconPoolToken(poolToken);
@@ -151,12 +149,12 @@ contract ZirconPylon {
         address feeTo = ZirconPylonFactory(factory).feeToo();
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         uint amountIn = _balance.sub(_reserve);
-        uint fee = feeTo != address(0) ? amountIn/1000 : 0;
+        uint fee = feeTo != address(0) ? amountIn/1000 : 0; //TODO make dynamic
         uint toTransfer = amountIn-fee;
         require(toTransfer > 0, "ZP: Not Enough Liquidity");
         uint maxSync = (_pairReserve == 0 || _reserve > _pairReserve) ? maxFloatSync.mul(100) :
         _pairReserve.mul(maximumPercentageSync).sub(_reserve.mul(100));
-        liquidity = (maxSync > toTransfer.mul(100)) ? Math.sqrt(maxSync) : Math.sqrt(toTransfer);
+        liquidity = (maxSync > toTransfer.mul(100)) ? maxSync : toTransfer;
 
         uint totalSupply = pt.totalSupply();
 
@@ -180,7 +178,7 @@ contract ZirconPylon {
 
         _update(balance0, balance1, reserve0, reserve1);
     }
-
+    // TODO: update value using oracle
     function mintAsync(address to, bool shouldMintAnchor) external lock returns (uint liquidity){
         IZirconPair pair = IZirconPair(pairAddress);
         IZirconPoolToken pt = IZirconPoolToken(floatPoolToken);
@@ -202,6 +200,7 @@ contract ZirconPylon {
             uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
             uint amountIn0 = balance0.sub(_reserve0);
             uint amountIn1 = balance1.sub(_reserve1);
+
             fee0 = feeTo == address(0) ? 0 : amountIn0/1000;
             fee1 = feeTo == address(0) ? 0 : amountIn0/1000;
             toTransfer0 = amountIn0.sub(fee0);
@@ -224,7 +223,7 @@ contract ZirconPylon {
             {
                 address _to = to;
                 (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
-                uint ratio = _pairReserve1/_pairReserve0 ;
+                uint ratio = _pairReserve1/_pairReserve0;
                 uint amount0InFloat = ratio.mul(toTransfer0);
                 pt.mint(_to, amount0InFloat);
                 emit MintPT(reserve1, reserve0);
@@ -239,7 +238,7 @@ contract ZirconPylon {
     function supplyFloatLiquidity() external pairUnlocked {
         // Mints Float pool tokens to the user according to the value supplied
         // Value is derived from TWAP pool oracle
-        // Follows Uniswap model — tokens are p re-sent to the contract by the router.
+        // Follows Uniswap model — tokens are pre-sent to the contract by the router.
         sync();
 
         // mintFloatTokens()
@@ -267,7 +266,7 @@ contract ZirconPylon {
     }
 
     function sync() public {
-        // Only continues if it's called by pair itself or if the pair is unlocked
+        // TODO: Only continues if it's called by pair itself or if the pair is unlocked
         // Which ensures it's not called within UniswapV2Callee
 
         if(msg.sender != pairAddress) { IZirconPair(pairAddress).tryLock(); }
@@ -282,13 +281,11 @@ contract ZirconPylon {
         uint totalPoolValue;
         uint totalPoolValuePrime;
 
-        uint poolTokensPrime = IZirconPair(pairAddress).totalSupply();
-        uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
+        uint poolTokensPrime = IZirconPair(pairAddress).totalSupply(); // total supply could be 0 at the beginning
+        uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this)); // What if pool token balance is 0 ?
 
-        // What if pool token balance is 0 ?
-
-        //TODO: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
-        //Adjusted by the protocol's share of the entire pool.
+        // TODO: Don't actually need oracle here, just relatively stable amount of reserve1. Or do we?
+        // Adjusted by the protocol's share of the entire pool.
         // price = oracle.getFloatPrice(reserve1, reserve0, floatToken, anchorToken);
         // TODO: SafeMath
         totalPoolValuePrime = reserve0.mul(2).mul(poolTokenBalance/(poolTokensPrime));
@@ -296,15 +293,15 @@ contract ZirconPylon {
         uint kPrime = reserve0 * reserve1;
 
         // TODO: Fix with actual integer math
-
+        // only if lastK > kPrime ?
         uint feeValue = totalPoolValuePrime.mul(1 - Math.sqrt(lastK/kPrime).mul(poolTokensPrime)/lastPoolTokens);
 
         virtualAnchorBalance += feeValue.mul(virtualAnchorBalance)/totalPoolValuePrime;
-        //TODO: Formula
+        // TODO: Formula
         virtualFloatBalance += feeValue.mul(1-virtualAnchorBalance/totalPoolValuePrime);
 
         // Gamma is the master variable used to define withdrawals
-        gammaMulDecimals = 10**18 - (virtualAnchorBalance.mul(10**18) /  totalPoolValuePrime.mul(10**18));
+        gammaMulDecimals = 1 - (virtualAnchorBalance /  totalPoolValuePrime);
         // 1 - ATV/TPV but multiplied by 10**18 due to integer math shit
     }
 

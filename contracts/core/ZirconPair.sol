@@ -165,12 +165,11 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'UniswapV2: OVERFLOW');
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
-            uint motherfucker = uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0));
             price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
             price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
-            emit TEST(motherfucker);
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
@@ -267,8 +266,10 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         address _token0 = token0;
         address _token1 = token1;
         require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
-        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out);
+            // optimistically transfer tokens
+        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out);
+            // optimistically transfer tokens
         if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
         balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
         balance1 = IERC20Uniswap(_token1).balanceOf(address(this));

@@ -11,7 +11,8 @@ contract ZirconPylonFactory {
     address public feeToo;
     address public factory;
     uint public maxFloat;
-    uint public maxAnchor; //TODO: see if better just to have only one variable
+    uint public maxAnchor;
+
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
 
