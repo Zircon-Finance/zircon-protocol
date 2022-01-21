@@ -379,31 +379,72 @@ describe("Pair", () => {
 
 describe("Pylon", () => {
   beforeEach(async () => {
+    // Let's initialize the Pool, inserting some liquidity in it
     const token0Amount = expandTo18Decimals(1700)
-    const token1Amount = expandTo18Decimals(5300)
-    await addLiquidity(token0Amount, token1Amount)
+    const token1Amount = expandTo18Decimals(  5300)
+    await  addLiquidity(token0Amount, token1Amount)
+    // Let's transfer some tokens to the Pylon
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await token1.transfer(pylonInstance.address, token1Amount)
+    //Let's initialize the Pylon, this should call two sync
+    await pylonInstance.initPylon(account.address)
   })
 
   it('should add float liquidity', async function () {
+    // Adding some tokens and minting
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
-    console.log(await pylonInstance.token0());
 
-    await pylonInstance.mintPoolTokens(account.address, false);
+    await expect(pylonInstance.mintPoolTokens(account.address, false))
+        .to.emit(pylonInstance, 'MintAT')
+        .to.emit(pylonInstance, 'PylonUpdate')
+        .withArgs(expandTo18Decimals(174), expandTo18Decimals(0));
+
     let b = await poolTokenInstance1.balanceOf(account.address);
+    console.log(b)
     await token1.transfer(pylonInstance.address, token0Amount)
+
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
-        // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
+        .withArgs(expandTo18Decimals(174), expandTo18Decimals(4))
+
     let t = await pair.balanceOf(pylonInstance.address)
     let res = await pylonInstance.getReserves()
     let t0 = await token0.balanceOf(pylonInstance.address)
     let t1 = await token1.balanceOf(pylonInstance.address)
+
+    let ts = await pair.totalSupply()
+    let tpv = await pylonInstance.totalPoolValuePrime()
+
   });
 
   it('should add async liquidity', async function () {
     const token0Amount = expandTo18Decimals(4)
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await token1.transfer(pylonInstance.address, token0Amount)
+
+    await pylonInstance.mintAsync(account.address, false);
+    // await expect(pylonInstance.mintAnchorTokens(account.address))
+    //     .to.emit(pylonInstance, 'MintAT')
+    //     .to.emit(pylonInstance, 'PylonUpdate')
+        // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
+
+    let t = await pair.balanceOf(pylonInstance.address)
+    let t0 = await token0.balanceOf(pylonInstance.address)
+    let t1 = await token1.balanceOf(pylonInstance.address)
+  });
+
+  it('testing sync', async function () {
+    const token0Amount = expandTo18Decimals(1000);
+    const token1Amount = expandTo18Decimals(3000);
+    await addLiquidity(token0Amount, token1Amount);
+
+    for (let i = 0; i < 10; i++) {
+      await addLiquidity(token0Amount, token1Amount);
+      // await pair.mint(account.address)
+    }
+
     await token0.transfer(pylonInstance.address, token0Amount)
     await token1.transfer(pylonInstance.address, token0Amount)
 
