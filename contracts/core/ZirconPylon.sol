@@ -148,7 +148,7 @@ contract ZirconPylon {
         }else{
             reserve1 = newReserve1;
         }
-        console.log("<<<Pylon:new res::::::::", reserve0/1e18, reserve1);
+        console.log("<<<Pylon:new res::::::::", reserve0/1e18, reserve1/1e18);
         emit PylonUpdate(reserve0, reserve1);
     }
 
@@ -176,9 +176,8 @@ contract ZirconPylon {
         // Pylon Update Minting
         //TODO: check if it is necessary a timeElapsed check
         if (balance0 > max0/2 && balance1 > max1/2) {
-            // TODO: get Maximum floor max0-1/2
             console.log("<<<Pylon:values::getMax::::::::", balance0/10**18, balance1/10**18);
-            (uint tx, uint ty) = _getMaximum(_pairReserve0, _pairReserve1, balance0, balance1);
+            (uint tx, uint ty) = _getMaximum(_pairReserve0, _pairReserve1, balance0.sub(max0/2), balance1.sub(max1/2));
             console.log("<<<Pylon:_getMaximum::::::::", tx/10**18, ty/10**18);
             if(tx != 0) _safeTransfer(token0, pairAddress, tx);
             if(ty != 0) _safeTransfer(token1, pairAddress, ty);
@@ -195,7 +194,7 @@ contract ZirconPylon {
         _updateVariables(_pairReserve0, _pairReserve1);
     }
 
-    function _updateVariables(uint _pairReserve0, uint _pairReserve1) {
+    function _updateVariables(uint _pairReserve0, uint _pairReserve1) private {
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
 //        uint32 timeElapsed = blockTimestamp - blockTimestampLast;
         blockTimestampLast = blockTimestamp;
@@ -253,7 +252,7 @@ contract ZirconPylon {
         _update(reserve0, reserve1);
     }
 
-
+    //TODO: Clean up this function
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         console.log("<<<Pylon:mintAsync::::::::start");
         sync();
@@ -267,11 +266,10 @@ contract ZirconPylon {
         uint toTransfer1;
         uint fee0;
         uint fee1;
-        uint balance0;
-        uint balance1;
         {
             address _token0 = token0;
             address _token1 = token1;
+            IZirconPair _pair = pair;
             address feeTo = ZirconPylonFactory(factory).feeToo();
             uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
             uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
@@ -288,6 +286,10 @@ contract ZirconPylon {
             toTransfer0 = amountIn0.sub(fee0);
             toTransfer1 = amountIn1.sub(fee1);
             console.log("<<<Pylon:toTransfer::::::::", toTransfer0, toTransfer1);
+
+            _safeTransfer(token0, pairAddress, toTransfer0);
+            _safeTransfer(token1, pairAddress, toTransfer1);
+            _pair.mint(address(this));
 
         }
 
@@ -313,9 +315,11 @@ contract ZirconPylon {
                 emit MintPT(reserve1, reserve0);
             }
         }
+
+
         if (fee0 != 0) _mintFee(fee1, anchorPoolToken);
         if (fee1 != 0) _mintFee(fee0, floatPoolToken);
-        _update(reserve0, reserve1);
+        //_update(reserve0, reserve1);
     }
 
 //    function supplyFloatLiquidity() external pairUnlocked {

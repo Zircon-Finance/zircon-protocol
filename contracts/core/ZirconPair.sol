@@ -220,7 +220,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
                 _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
             }
         } else {
-            liquidity = Math.min(amount1.mul(_totalSupply) / _reserve1);
+            liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
         }
         require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
