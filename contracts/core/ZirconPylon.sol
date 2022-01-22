@@ -117,13 +117,15 @@ contract ZirconPylon {
         initialized = 1;
     }
 
+
     function _getMaximum(uint _pR0, uint _pR1, uint _b0, uint _b1) private returns (uint maxX, uint maxY)  {
-        if (_pR1 > _pR0) {
-            maxX = _b0.mul(_pR0)/_pR1 ;
-            maxY = _b1;
-        } else {
+        uint tx = _pR0.mul(_b1)/_pR1;
+        if (tx > _b0) {
             maxX = _b0;
-            maxY = _b1.mul(_pR1)/_pR0;
+            maxY = _b0.mul(_pR1)/_pR0;
+        } else {
+            maxX = tx;
+            maxY = _b1;
         }
     }
 
@@ -194,6 +196,8 @@ contract ZirconPylon {
 
         // Updating Variables
         _updateVariables(_pairReserve0, _pairReserve1);
+        console.log("<<<Pylon:update::::::::end\n\n");
+
     }
 
     function _updateVariables(uint _pairReserve0, uint _pairReserve1) private {
@@ -202,7 +206,6 @@ contract ZirconPylon {
         blockTimestampLast = blockTimestamp;
         lastPoolTokens = IZirconPair(pairAddress).totalSupply();
         lastK = _pairReserve0*_pairReserve1;
-        console.log("<<<Pylon:vars::::::::end");
     }
 
     // Minting
@@ -220,23 +223,21 @@ contract ZirconPylon {
         address feeTo = ZirconPylonFactory(factory).feeToo();
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         uint amountIn = _balance.sub(_reserve);
-        console.log("<<<Pylon:::::::amountIn>>>> ", amountIn);
+        console.log("<<<Pylon:::::::amountIn>>>> ", amountIn/1e18);
         uint fee = feeTo != address(0) ? amountIn/1000 : 0;
         console.log("<<<Pylon:::::::fee>>>> ", fee);
         uint toTransfer = amountIn-fee;
-        console.log("<<<Pylon:::::::toTransfer>>>> ", toTransfer);
+        console.log("<<<Pylon:::::::toTransfer>>>> ", toTransfer/1e18);
         require(toTransfer > 0, "ZP: Not Enough Liquidity");
-        uint maxSync = (_pairReserve == 0 || _reserve > _pairReserve) ? maxFloatSync.mul(100) :
-        _pairReserve.mul(maximumPercentageSync).sub(_reserve.mul(100));
-        console.log("<<<Pylon:::::::maxSync>>>> ", maxSync);
-        liquidity = (maxSync > toTransfer.mul(100)) ? maxSync : toTransfer;
-        console.log("<<<Pylon:::::::liquidity>>>> ", liquidity);
-        uint totalSupply = pt.totalSupply();
-        console.log("<<<Pylon:::::::totalSupply>>>> ", totalSupply);
+        uint maxSync = (_pairReserve == 0 || _reserve > _pairReserve) ? maxFloatSync :
+        (_pairReserve.mul(maximumPercentageSync)/100).sub(_reserve);
+        console.log("<<<Pylon:::::::maxSync>>>> ", maxSync/1e18);
+        liquidity = (maxSync < toTransfer) ? maxSync : toTransfer;
+        console.log("<<<Pylon:::::::liquidity>>>> ", liquidity/1e18);
         pt.mint(_to, liquidity);
         if (fee != 0) _mintFee(fee, _poolTokenAddress);
         emit MintPT(reserve0, reserve1);
-        console.log("<<<Pylon:_mintPoolToken::::::::end");
+        console.log("<<<Pylon:_mintPoolToken::::::::end \n\n");
     }
 
     function mintPoolTokens(address to, bool isAnchor) isInitialized external returns (uint liquidity) {
@@ -321,7 +322,9 @@ contract ZirconPylon {
 
         if (fee0 != 0) _mintFee(fee1, anchorPoolToken);
         if (fee1 != 0) _mintFee(fee0, floatPoolToken);
-        _updateVariables(_pairReserve0, _pairReserve1);
+        console.log("<<<Pylon:mintAsync:::::::: \n\n");
+
+     _updateVariables(_pairReserve0, _pairReserve1);
     }
 
 //    function supplyFloatLiquidity() external pairUnlocked {

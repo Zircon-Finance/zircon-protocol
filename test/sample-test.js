@@ -399,7 +399,7 @@ describe("Pylon", () => {
     await expect(pylonInstance.mintPoolTokens(account.address, false))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
-        .withArgs(expandTo18Decimals(174), expandTo18Decimals(265));
+        .withArgs(expandTo18Decimals(89), expandTo18Decimals(265));
 
     let b = await poolTokenInstance1.balanceOf(account.address);
     console.log(b)
@@ -408,19 +408,20 @@ describe("Pylon", () => {
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
-        .withArgs(expandTo18Decimals(174), expandTo18Decimals(269))
-    const newAmount0 = expandTo18Decimals(200)
+        .withArgs(expandTo18Decimals(89), expandTo18Decimals(269))
+
+    const newAmount0 = expandTo18Decimals(500)
     const newAmount1 = expandTo18Decimals(800)
     await token0.transfer(pylonInstance.address, newAmount0)
     await expect(pylonInstance.mintPoolTokens(account.address, false))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
-        .withArgs(ethers.BigNumber.from("221801886792452830188"), expandTo18Decimals(269))
+        .withArgs(ethers.BigNumber.from("331500000000000000000"), expandTo18Decimals(269))
     await token1.transfer(pylonInstance.address, newAmount1)
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
-        .withArgs(expandTo18Decimals(174), expandTo18Decimals(269))
+        .withArgs(ethers.BigNumber.from("165750000000000000000"), ethers.BigNumber.from("552250000000000000000"))
 
     let t = await pair.balanceOf(pylonInstance.address)
     let res = await pylonInstance.getReserves()
