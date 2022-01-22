@@ -71,7 +71,7 @@ beforeEach(async () => {
 
 describe("Factory", function () {
   it("deploys factory", async function () {
-      assert.ok(factoryInstance);
+    assert.ok(factoryInstance);
   });
 
   it("should fail equal pair", async function () {
@@ -379,7 +379,7 @@ describe("Pair", () => {
 })
 
 describe("Pylon", () => {
-  beforeEach(async () => {
+  const init = async () => {
     // Let's initialize the Pool, inserting some liquidity in it
     const token0Amount = expandTo18Decimals(1700)
     const token1Amount = expandTo18Decimals(  5300)
@@ -389,10 +389,47 @@ describe("Pylon", () => {
     await token1.transfer(pylonInstance.address, token1Amount)
     //Let's initialize the Pylon, this should call two sync
     await pylonInstance.initPylon(account.address)
+  }
+
+  const mintTestCases = [
+    [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
+    [1, 10, 5, '500000000000000000', '975000000000000000','1000000000000000000', '1225000000000000000', true],
+    [2, 5, 10, '250000000000000000', '1950000000000000000','500000000000000000', '2450000000000000000', true],
+    [1, 10, 10, '1500000000000000000', '500000000000000000','2000000000000000000', '1000000000000000000', false],
+    [1, 1000, 1000, '50000000000000000000', '51000000000000000000','100000000000000000000', '101000000000000000000', true],
+ ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
+  mintTestCases.forEach((mintCase, i) => {
+    it(`mintPylon:${i}`, async () => {
+      const [mint, token0Amount, token1Amount, expectedRes0, expectedRes1, expectedOutputAmount0, expectedOutputAmount1, isAnchor] = mintCase
+      await addLiquidity(token0Amount, token1Amount)
+
+      await token0.transfer(pylonInstance.address, token0Amount)
+      await token1.transfer(pylonInstance.address, token1Amount)
+      await pylonInstance.initPylon(account.address)
+      if (isAnchor) {
+        await token1.transfer(pylonInstance.address, mint)
+      }else{
+        await token0.transfer(pylonInstance.address, mint)
+      }
+
+      await expect(pylonInstance.mintPoolTokens(account.address, isAnchor))
+          .to.emit(pylonInstance, 'MintAT')
+          .to.emit(pylonInstance, 'PylonUpdate')
+          .withArgs(expectedRes0, expectedRes1);
+      // Float
+      let tokenBalance = await poolTokenInstance1.balanceOf(account.address)
+      console.log(tokenBalance)
+      assert(tokenBalance.eq(expectedOutputAmount0));
+      // Anchor
+      let tokenBalance1 = await poolTokenInstance2.balanceOf(account.address)
+      assert(tokenBalance1.eq(expectedOutputAmount1));
+    })
+
   })
 
-  it('should add float liquidity', async function () {
+  it('should add float/anchor liquidity', async function () {
     // Adding some tokens and minting
+    await init()
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
 
@@ -431,9 +468,12 @@ describe("Pylon", () => {
     let ts = await pair.totalSupply()
     let tpv = await pylonInstance.totalPoolValuePrime()
 
+    //TODO: Calculate that minted tokens are okay
+
   });
 
   it('should add async liquidity', async function () {
+    await init()
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
     await token1.transfer(pylonInstance.address, token0Amount)
@@ -442,34 +482,12 @@ describe("Pylon", () => {
     // await expect(pylonInstance.mintAnchorTokens(account.address))
     //     .to.emit(pylonInstance, 'MintAT')
     //     .to.emit(pylonInstance, 'PylonUpdate')
-        // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
+    // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
 
     let t = await pair.balanceOf(pylonInstance.address)
     let t0 = await token0.balanceOf(pylonInstance.address)
     let t1 = await token1.balanceOf(pylonInstance.address)
+    //TODO: Calculate that minted tokens are okay
   });
 
-  it('testing sync', async function () {
-    const token0Amount = expandTo18Decimals(1000);
-    const token1Amount = expandTo18Decimals(3000);
-    await addLiquidity(token0Amount, token1Amount);
-
-    for (let i = 0; i < 10; i++) {
-      await addLiquidity(token0Amount, token1Amount);
-      // await pair.mint(account.address)
-    }
-
-    await token0.transfer(pylonInstance.address, token0Amount)
-    await token1.transfer(pylonInstance.address, token0Amount)
-
-    await pylonInstance.mintAsync(account.address, true);
-    // await expect(pylonInstance.mintAnchorTokens(account.address))
-    //     .to.emit(pylonInstance, 'MintAT')
-    //     .to.emit(pylonInstance, 'PylonUpdate')
-        // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
-
-    let t = await pair.balanceOf(pylonInstance.address)
-    let t0 = await token0.balanceOf(pylonInstance.address)
-    let t1 = await token1.balanceOf(pylonInstance.address)
-  });
 })
