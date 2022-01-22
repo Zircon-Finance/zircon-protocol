@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require('hardhat');
 const assert = require("assert");
+const {BigNumber} = require("ethers");
 
 const TEST_ADDRESSES = [
   '0x1000000000000000000000000000000000000000',
@@ -404,6 +405,18 @@ describe("Pylon", () => {
     console.log(b)
     await token1.transfer(pylonInstance.address, token0Amount)
 
+    await expect(pylonInstance.mintPoolTokens(account.address, true))
+        .to.emit(pylonInstance, 'MintAT')
+        .to.emit(pylonInstance, 'PylonUpdate')
+        .withArgs(expandTo18Decimals(174), expandTo18Decimals(269))
+    const newAmount0 = expandTo18Decimals(200)
+    const newAmount1 = expandTo18Decimals(800)
+    await token0.transfer(pylonInstance.address, newAmount0)
+    await expect(pylonInstance.mintPoolTokens(account.address, false))
+        .to.emit(pylonInstance, 'MintAT')
+        .to.emit(pylonInstance, 'PylonUpdate')
+        .withArgs(ethers.BigNumber.from("221801886792452830188"), expandTo18Decimals(269))
+    await token1.transfer(pylonInstance.address, newAmount1)
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')

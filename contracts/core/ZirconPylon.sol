@@ -171,10 +171,12 @@ contract ZirconPylon {
         uint112 max0 = uint112(_pairReserve0/(maximumPercentageSync));
         uint112 max1 = uint112(_pairReserve1/(maximumPercentageSync));
 
-        console.log("<<<Pylon:balances::::::::", balance0, balance1);
+        console.log("<<<Pylon:balances::::::::", balance0/1e18, balance1/1e18);
+        console.log("<<<Pylon:pairReserves::::::::", _pairReserve0/1e18, _pairReserve1/1e18);
 
         // Pylon Update Minting
         //TODO: check if it is necessary a timeElapsed check
+        console.log("<<<Pylon:values::maxes::::::::", max0/1e18, max1/1e18);
         if (balance0 > max0/2 && balance1 > max1/2) {
             console.log("<<<Pylon:values::getMax::::::::", balance0/10**18, balance1/10**18);
             (uint tx, uint ty) = _getMaximum(_pairReserve0, _pairReserve1, balance0.sub(max0/2), balance1.sub(max1/2));
@@ -200,7 +202,7 @@ contract ZirconPylon {
         blockTimestampLast = blockTimestamp;
         lastPoolTokens = IZirconPair(pairAddress).totalSupply();
         lastK = _pairReserve0*_pairReserve1;
-        console.log("<<<Pylon:_update::::::::end");
+        console.log("<<<Pylon:vars::::::::end");
     }
 
     // Minting
@@ -259,6 +261,7 @@ contract ZirconPylon {
         IZirconPair pair = IZirconPair(pairAddress);
         IZirconPoolToken pt = IZirconPoolToken(floatPoolToken);
         IZirconPoolToken at = IZirconPoolToken(anchorPoolToken);
+        (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
 
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
 
@@ -299,8 +302,7 @@ contract ZirconPylon {
         if (shouldMintAnchor) {
             {
                 address _to = to;
-                (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
-                uint amount1InAnchor = toTransfer1.mul(_pairReserve0)/_pairReserve1;
+                uint amount1InAnchor = toTransfer1.mul(_pairReserve0)/_pairReserve1; //TODO: maybe another foumla is faster
                 console.log("<<<Pylon:amount1InAnchor::::::::", amount1InAnchor/1e18);
                 at.mint(_to, amount1InAnchor);
                 emit MintPT(reserve0, reserve1);
@@ -319,7 +321,7 @@ contract ZirconPylon {
 
         if (fee0 != 0) _mintFee(fee1, anchorPoolToken);
         if (fee1 != 0) _mintFee(fee0, floatPoolToken);
-        //_update(reserve0, reserve1);
+        _updateVariables(_pairReserve0, _pairReserve1);
     }
 
 //    function supplyFloatLiquidity() external pairUnlocked {
