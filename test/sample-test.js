@@ -9,7 +9,7 @@ const TEST_ADDRESSES = [
 ]
 
 let factory, factoryPylonInstance,  token0, token1,
-    pylonInstance, poolTokenInstance1, poolTokenInstance2,
+    pylonInstance, poolTokenInstance0, poolTokenInstance1,
     factoryInstance, deployerAddress, account2, account,
     lpAddress, pair;
 
@@ -63,8 +63,8 @@ beforeEach(async () => {
 
   let poolAddress1 = await pylonInstance.floatPoolToken();
 
-  poolTokenInstance1 = poolToken1.attach(poolAddress1)
-  poolTokenInstance2 = poolToken2.attach(poolAddress2)
+  poolTokenInstance0 = poolToken1.attach(poolAddress1)
+  poolTokenInstance1 = poolToken2.attach(poolAddress2)
 
 
 });
@@ -391,6 +391,7 @@ describe("Pylon", () => {
     await pylonInstance.initPylon(account.address)
   }
 
+  // Let's try to calculate some cases for pylon
   const mintTestCases = [
     [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
     [1, 10, 5, '500000000000000000', '975000000000000000','1000000000000000000', '1225000000000000000', true],
@@ -401,75 +402,94 @@ describe("Pylon", () => {
   mintTestCases.forEach((mintCase, i) => {
     it(`mintPylon:${i}`, async () => {
       const [mint, token0Amount, token1Amount, expectedRes0, expectedRes1, expectedOutputAmount0, expectedOutputAmount1, isAnchor] = mintCase
+      // Add some liquidity to the Pair...
       await addLiquidity(token0Amount, token1Amount)
-
+      // Transferring some tokens
       await token0.transfer(pylonInstance.address, token0Amount)
       await token1.transfer(pylonInstance.address, token1Amount)
+      // Let's start the pylon
       await pylonInstance.initPylon(account.address)
+      // Transferring some liquidity to pylon
       if (isAnchor) {
         await token1.transfer(pylonInstance.address, mint)
       }else{
         await token0.transfer(pylonInstance.address, mint)
       }
-
+      // Minting some float/anchor tokens
       await expect(pylonInstance.mintPoolTokens(account.address, isAnchor))
           .to.emit(pylonInstance, 'MintAT')
           .to.emit(pylonInstance, 'PylonUpdate')
           .withArgs(expectedRes0, expectedRes1);
-      // Float
-      let tokenBalance = await poolTokenInstance1.balanceOf(account.address)
-      console.log(tokenBalance)
-      assert(tokenBalance.eq(expectedOutputAmount0));
+      // Let's check the balances, float
+      assert((await poolTokenInstance0.balanceOf(account.address)).eq(expectedOutputAmount0));
       // Anchor
-      let tokenBalance1 = await poolTokenInstance2.balanceOf(account.address)
-      assert(tokenBalance1.eq(expectedOutputAmount1));
+      assert((await poolTokenInstance1.balanceOf(account.address)).eq(expectedOutputAmount1));
     })
 
   })
 
   it('should add float/anchor liquidity', async function () {
     // Adding some tokens and minting
+    // here we initially the pool
     await init()
+    // Let's check if pair tokens and poolToken have been given correctly...
+    assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("2851582893762690532526")) )
+    // On init the tokens sent to the pylon exceeds maxSync
+    // So we have less tokens
+    // We donated some tokens to the pylon over there
+    // Let's check that we have the current quantities...
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(expandTo18Decimals(170)) )
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(expandTo18Decimals(530)) )
+    // Let's put some minor quantities into the pylon
+    // it shouldn't mint any pool tokens for pylon, just increase reserves on pylon
+    // First Float...
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
-
     await expect(pylonInstance.mintPoolTokens(account.address, false))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(expandTo18Decimals(89), expandTo18Decimals(265));
-
-    let b = await poolTokenInstance1.balanceOf(account.address);
-    console.log(b)
+    // Then Anchor...
     await token1.transfer(pylonInstance.address, token0Amount)
-
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(expandTo18Decimals(89), expandTo18Decimals(269))
-
+    // Same pair tokens as before on pylon...
+    assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("2851582893762690532526")))
+    // We increase by 4 the Anchor and Float share...
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(expandTo18Decimals(174)) )
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(expandTo18Decimals(534)) )
+    // Ok Let's send some higher random quantities to the pylon
+    // Here we increase the float token
+    // The pylon has to donate the exceeding tokens to the pair
+    // The pylon shouldn't mint any pair tokens yet...
     const newAmount0 = expandTo18Decimals(500)
-    const newAmount1 = expandTo18Decimals(800)
     await token0.transfer(pylonInstance.address, newAmount0)
     await expect(pylonInstance.mintPoolTokens(account.address, false))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(ethers.BigNumber.from("331500000000000000000"), expandTo18Decimals(269))
+    // Same pair tokens as before on pylon...
+    assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("2851582893762690532526")))
+    // Let's send some anchor token
+    // Pylon should mint some pair tokens
+    const newAmount1 = expandTo18Decimals(800)
     await token1.transfer(pylonInstance.address, newAmount1)
     await expect(pylonInstance.mintPoolTokens(account.address, true))
         .to.emit(pylonInstance, 'MintAT')
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(ethers.BigNumber.from("165750000000000000000"), ethers.BigNumber.from("552250000000000000000"))
-
-    let t = await pair.balanceOf(pylonInstance.address)
-    let res = await pylonInstance.getReserves()
-    let t0 = await token0.balanceOf(pylonInstance.address)
-    let t1 = await token1.balanceOf(pylonInstance.address)
-
-    let ts = await pair.totalSupply()
-    let tpv = await pylonInstance.totalPoolValuePrime()
-
-    //TODO: Calculate that minted tokens are okay
-
+    // We increase pylon float reserves by 242.5*1e18 and we minted that quantity for the user
+    // And we donated to the pair 257.5*1e18
+    // For a total of 500*1e18
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("416500000000000000000")) )
+    // We increased pylon anchor reserves by 764 and we minted that quantity for the user
+    // And we didn't donate...
+    // We minted some more pool shares for the pylon for 165*1e18 float and 516*1e18 anchor
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("1298500000000000000000")) )
+    // And here Pylon increased the pair share 516*totalSupply/reserves1 ->
+    assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("3144245348648861402969")));
   });
 
   it('should add async liquidity', async function () {
