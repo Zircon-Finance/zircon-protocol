@@ -378,7 +378,13 @@ describe("Pair", () => {
   });
 })
 
+// TODO: Put correct events emitted from Pylon SC
+// TODO: Create test with init pylon before pair
+// TODO: Create Test two Pylons
+// TODO: Create test fees on
+// TODO: Create Test async 100%
 describe("Pylon", () => {
+
   const init = async () => {
     // Let's initialize the Pool, inserting some liquidity in it
     const token0Amount = expandTo18Decimals(1700)
@@ -417,7 +423,6 @@ describe("Pylon", () => {
       }
       // Minting some float/anchor tokens
       await expect(pylonInstance.mintPoolTokens(account.address, isAnchor))
-          .to.emit(pylonInstance, 'MintAT')
           .to.emit(pylonInstance, 'PylonUpdate')
           .withArgs(expectedRes0, expectedRes1);
       // Let's check the balances, float
@@ -493,12 +498,24 @@ describe("Pylon", () => {
   });
 
   it('should add async liquidity', async function () {
+    // Let's initialize the pool and pylon
     await init()
+    // Let's send some tokens
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
     await token1.transfer(pylonInstance.address, token0Amount)
-
+    // Let's try to mint async
     await pylonInstance.mintAsync(account.address, false);
+    // We should receive float tokens and pylon should've minted some pair shares
+    // Let's check...
+    console.log(await poolTokenInstance0.balanceOf(account.address))
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("175283018867924528301")))
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(expandTo18Decimals(530)))
+
+    // Now let's test to receive some anchor tokens
+    await pylonInstance.mintAsync(account.address, true);
+    // Let's check...
+
     // await expect(pylonInstance.mintAnchorTokens(account.address))
     //     .to.emit(pylonInstance, 'MintAT')
     //     .to.emit(pylonInstance, 'PylonUpdate')
