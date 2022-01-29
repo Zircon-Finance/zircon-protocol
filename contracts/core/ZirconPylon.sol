@@ -16,9 +16,9 @@ contract ZirconPylon {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
     address public pairAddress;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
-    uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     address public factory;
     address public floatPoolToken;
@@ -118,6 +118,8 @@ contract ZirconPylon {
         virtualAnchorBalance = anchorLiquidity;
         virtualFloatBalance = floatLiquidity;
         _update(reserve0, reserve1);
+
+
         initialized = 1;
     }
 
@@ -254,7 +256,8 @@ contract ZirconPylon {
         liquidity = (maxSync < toTransfer) ? maxSync : toTransfer;
         console.log("<<<Pylon:::::::liquidity>>>> ", liquidity/testMultiplier);
 
-        //TODO: Minted token should follow gamma formula
+        // TODO: Minted token should follow gamma formula
+        if (_pairReserve == 0) pt.mint(address(0), MINIMUM_LIQUIDITY);
         pt.mint(_to, liquidity);
         if (fee != 0) _mintFee(fee, _poolTokenAddress);
         emit MintPT(reserve0, reserve1);
