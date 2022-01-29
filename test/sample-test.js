@@ -396,7 +396,6 @@ describe("Pylon", () => {
     //Let's initialize the Pylon, this should call two sync
     await pylonInstance.initPylon(account.address)
   }
-
   // Let's try to calculate some cases for pylon
   const mintTestCases = [
     [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
@@ -430,8 +429,56 @@ describe("Pylon", () => {
       // Anchor
       assert((await poolTokenInstance1.balanceOf(account.address)).eq(expectedOutputAmount1));
     })
-
+  })  // Let's try to calculate some cases for pylon
+  const syncTestCase = [
+    [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
+ ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
+  syncTestCase.forEach((mintCase, i) => {
+    it(`syncPylon`, async () => {
+      const [mint, token0Amount, token1Amount, expectedRes0, expectedRes1, expectedOutputAmount0, expectedOutputAmount1, isAnchor] = mintCase
+      // Add some liquidity to the Pair...
+      await addLiquidity(token0Amount, token1Amount)
+      // Transferring some tokens
+      await token0.transfer(pylonInstance.address, token0Amount)
+      await token1.transfer(pylonInstance.address, token1Amount)
+      // Let's start the pylon
+      await pylonInstance.initPylon(account.address)
+      for (let i = 0; i < 10; i++){
+        // Transferring some liquidity to pylon
+        if (isAnchor) {
+          await token1.transfer(pylonInstance.address, mint)
+        }else{
+          await token0.transfer(pylonInstance.address, mint)
+        }
+        // Minting some float/anchor tokens
+        await expect(pylonInstance.mintPoolTokens(account.address, isAnchor))
+            .to.emit(pylonInstance, 'PylonUpdate')
+            .withArgs(expectedRes0, expectedRes1);
+        // Let's check the balances, float
+        assert((await poolTokenInstance0.balanceOf(account.address)).eq(expectedOutputAmount0));
+        // Anchor
+        assert((await poolTokenInstance1.balanceOf(account.address)).eq(expectedOutputAmount1));
+      }
+    })
   })
+
+  it('should initially pair from pylon', async function () {
+    const token0Amount = expandTo18Decimals(4)
+    const token1Amount = expandTo18Decimals(8)
+
+    // Let's transfer some tokens to the Pylon
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await token1.transfer(pylonInstance.address, token1Amount)
+    //Let's initialize the Pylon, this should call two sync
+    await pylonInstance.initPylon(account.address)
+    //TODO: Should receive max float sync
+
+    await token1.transfer(pylonInstance.address, token0Amount)
+    // Minting some float/anchor tokens
+    await pylonInstance.mintPoolTokens(account.address, true);
+
+
+  });
 
   it('should add float/anchor liquidity', async function () {
     // Adding some tokens and minting
@@ -496,6 +543,26 @@ describe("Pylon", () => {
     // And here Pylon increased the pair share 516*totalSupply/reserves1 ->
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("3144245348648861402969")));
   });
+
+  it('sync', async function () {
+    // Initializing
+    await init()
+    let vab = await pylonInstance.virtualAnchorBalance();
+    let currentAnchorBalance = await poolTokenInstance1.balanceOf(account.address);
+    assert(vab.eq(currentAnchorBalance))
+
+    await token0.transfer(pair.address, expandTo18Decimals(1))
+    await pair.swap(0, ethers.BigNumber.from('1662497915624478906'), account.address, '0x', overrides)
+    //TODO: Do test extracting liquidity here
+
+    const newAmount0 = expandTo18Decimals(500)
+    await token0.transfer(pylonInstance.address, newAmount0)
+    await pylonInstance.mintPoolTokens(account.address, false)
+
+    let vfb = await pylonInstance.virtualFloatBalance();
+    //TODO: do calculos to see if this is correct
+    //TODO: more swapping
+  })
 
   it('should add async liquidity', async function () {
     // Let's initialize the pool and pylon
