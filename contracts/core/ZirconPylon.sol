@@ -103,7 +103,7 @@ contract ZirconPylon {
         maxFloatSync = ZirconPylonFactory(factory).maxFloat();
         maxAnchorSync = ZirconPylonFactory(factory).maxAnchor();
     }
-    
+
     // TODO: mint AT and FT minus a minimum liquidity in PT
     function initPylon(address _to) external lock{
         require(initialized == 0, "Already Initialized");
@@ -214,7 +214,8 @@ contract ZirconPylon {
     }
 
     function _updateVariables() private {
-        (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
+
+        (uint112 _pairReserve0, uint112 _pairReserve1,) = IZirconPair(pairAddress).getReserves();
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         //        uint32 timeElapsed = blockTimestamp - blockTimestampLast;
         blockTimestampLast = blockTimestamp;
@@ -334,7 +335,7 @@ contract ZirconPylon {
         if (fee1 != 0) _mintFee(fee0, floatPoolToken);
         console.log("<<<Pylon:mintAsync:::::::: \n\n");
 
-        _updateVariables(_pairReserve0, _pairReserve1);
+        _updateVariables();
     }
 
     //    function supplyFloatLiquidity() external pairUnlocked {
@@ -369,64 +370,58 @@ contract ZirconPylon {
     uint public totalPoolValuePrime;
 
     function sync() public {
-        // TODO: Only continues if it's called by pair itself or if the pair is unlocked
-        // Which ensures it's not called within UniswapV2Callee
         console.log("<<<Pylon:sync::::::::start");
-
         if(msg.sender != pairAddress) { IZirconPair(pairAddress).tryLock(); }
-
         // So this thing needs to get pool reserves, get the price of the float asset in anchor terms
         // Then it applies the base formula:
         // Adds fees to virtualFloat and virtualAnchor
         // And then calculates Gamma so that the proportions are correct according to the formula
         (uint112 reserve0, uint112 reserve1,) = IZirconPair(pairAddress).getReserves();
-
-        // If the currentK is equal to the last K, means that we haven't had any updates on the pair level
+        // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
-        uint currentK = reserve0*reserve1;
-        if (lastPoolTokens != 0 && reserve0 != 0 && reserve1 != 0 && lastK != currentK && lastK < currentK) {
-            uint price;
-            uint totalPoolValue;
+        uint currentK = uint(reserve0).mul(reserve1);
+        console.log("<<<Pylon:sync::::::::currentK'=", currentK/testMultiplier, "::::lastK=", lastK/testMultiplier);
+        if (lastPoolTokens != 0 && reserve0 != 0 && reserve1 != 0 && lastK < currentK) {
 
             uint poolTokensPrime = IZirconPair(pairAddress).totalSupply();
-            // Here it is going to be useful to have a Minimum liquidity always
+
+            // Here it is going to be useful to have a Minimum Liquidity
             // If not we can have some problems
             uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
             console.log("<<<Pylon:sync::::::::pt'=", poolTokensPrime/testMultiplier, "::::ptb=", poolTokenBalance/testMultiplier);
+
+            // Let's get the amount of total pool value own by pylon
             totalPoolValuePrime = reserve0.mul(2).mul(poolTokenBalance)/poolTokensPrime;
             console.log("<<<Pylon:sync::::::::tpv'=", totalPoolValuePrime/testMultiplier);
-            console.log("<<<Pylon:sync::::::::r0,r1=", reserve0, reserve1);
-            // only if lastK > kPrime ?
+            console.log("<<<Pylon:sync::::::::r0,r1=", reserve0/testMultiplier, reserve1/testMultiplier);
+
             uint rootK = Math.sqrt(currentK);
-            uint k = (Math.sqrt(lastK)*poolTokensPrime*1e18)/(rootK*lastPoolTokens);
-
+            uint d = 1e18 - (Math.sqrt(lastK)*poolTokensPrime*1e18)/(rootK*lastPoolTokens);
             console.log("<<<Pylon:sync::::::::lk=", lastK/testMultiplier);
-            console.log("<<<Pylon:sync::::::::k'=", rootK/testMultiplier, ":::k=", k/testMultiplier);
             console.log("<<<Pylon:sync::::::::lpt'=", lastPoolTokens/testMultiplier);
-            uint d = 1e18 - k;
             console.log("<<<Pylon:sync::::::::d=", d);
-
+            // Getting how much fee value has been created for pylon
             uint feeValue = totalPoolValuePrime.mul(d)/1e18;
             console.log("<<<Pylon:sync::::::::fee=", feeValue/testMultiplier);
 
+            // Calculating gamma, variable used to calculate tokens to mint and withdrawals
             if (virtualAnchorBalance < totalPoolValuePrime/2) {
                 gammaMulDecimals = 1e18 - (virtualAnchorBalance*1e18 /  totalPoolValuePrime);
             }else{
                 gammaMulDecimals = virtualFloatBalance /  (virtualFloatBalance.add(virtualAnchorBalance.mul(reserve0)/reserve1));
             }
+            // TODO: (see if make sense to insert a floor to for example 25/75)
             console.log("<<<Pylon:sync::::::::gamma'=", gammaMulDecimals/testMultiplier);
+            // Calculating VAB and VFB
+            console.log("<<<Pylon:sync:::::::prev:vab'=", virtualAnchorBalance/testMultiplier,
+                "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance);
 
-
-//            console.log("<<<Pylon:sync::::::::mult=", mult/testMultiplier);
             virtualAnchorBalance += (feeValue.mul(gammaMulDecimals))/1e18;
-            console.log("<<<Pylon:sync::::::::vab'=", virtualAnchorBalance/testMultiplier);
+            console.log("<<<Pylon:sync::::::::vab'=", virtualAnchorBalance);
             virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValue)/1e18;
-
-            console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
-            // Gamma is the master variable used to define withdrawals
-            console.log("<<<Pylon:sync::::::::end\n\n");
-
+            console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance);
         }
+        console.log("<<<Pylon:sync::::::::end\n\n");
     }
 
     // Called at the end of supply functions to supply any available 50-50 liquidity to underlying pool

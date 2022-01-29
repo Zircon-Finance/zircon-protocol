@@ -379,16 +379,15 @@ describe("Pair", () => {
 })
 
 // TODO: Put correct events emitted from Pylon SC
-// TODO: Create test with init pylon before pair
 // TODO: Create Test two Pylons
 // TODO: Create test fees on
 // TODO: Create Test async 100%
+// TODO: See case where we have a big dump
 describe("Pylon", () => {
 
-  const init = async () => {
+  const init = async (token0Amount, token1Amount) => {
     // Let's initialize the Pool, inserting some liquidity in it
-    const token0Amount = expandTo18Decimals(1700)
-    const token1Amount = expandTo18Decimals(  5300)
+
     await  addLiquidity(token0Amount, token1Amount)
     // Let's transfer some tokens to the Pylon
     await token0.transfer(pylonInstance.address, token0Amount)
@@ -476,14 +475,12 @@ describe("Pylon", () => {
     await token1.transfer(pylonInstance.address, token0Amount)
     // Minting some float/anchor tokens
     await pylonInstance.mintPoolTokens(account.address, true);
-
-
   });
 
   it('should add float/anchor liquidity', async function () {
     // Adding some tokens and minting
     // here we initially the pool
-    await init()
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
     // Let's check if pair tokens and poolToken have been given correctly...
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("2851582893762690532526")) )
     // On init the tokens sent to the pylon exceeds maxSync
@@ -544,29 +541,38 @@ describe("Pylon", () => {
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("3144245348648861402969")));
   });
 
+  // TODO: Do test extracting liquidity here
   it('sync', async function () {
     // Initializing
-    await init()
+    await init(expandTo18Decimals(5), expandTo18Decimals(  10))
+    // VAB at the beginning is equal to the minted pool tokens
     let vab = await pylonInstance.virtualAnchorBalance();
     let currentAnchorBalance = await poolTokenInstance1.balanceOf(account.address);
     assert(vab.eq(currentAnchorBalance))
-
+    // Time to swap, let's generate some fees
     await token0.transfer(pair.address, expandTo18Decimals(1))
     await pair.swap(0, ethers.BigNumber.from('1662497915624478906'), account.address, '0x', overrides)
-    //TODO: Do test extracting liquidity here
-
+    // Minting tokens is going to trigger a change in the VAB & VFB so let's check
     const newAmount0 = expandTo18Decimals(500)
     await token0.transfer(pylonInstance.address, newAmount0)
     await pylonInstance.mintPoolTokens(account.address, false)
-
+    // So here we increase our vab and vfb
     let vfb = await pylonInstance.virtualFloatBalance();
-    //TODO: do calculos to see if this is correct
-    //TODO: more swapping
+    let vab2 = await pylonInstance.virtualAnchorBalance();
+    assert(vfb.eq(ethers.BigNumber.from('504254475791576725')))
+    assert(vab2.eq(ethers.BigNumber.from('1040308430897117955')))
+    // Let's mint some LP Tokens
+    // no fee changes so vab & vfb should remain the same
+    await addLiquidity(expandTo18Decimals(5), expandTo18Decimals(  10))
+    let vfb3 = await pylonInstance.virtualFloatBalance();
+    let vab3 = await pylonInstance.virtualAnchorBalance();
+    assert(vfb3.eq(ethers.BigNumber.from('504254475791576725')))
+    assert(vab3.eq(ethers.BigNumber.from('1040308430897117955')))
   })
 
   it('should add async liquidity', async function () {
     // Let's initialize the pool and pylon
-    await init()
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
     // Let's send some tokens
     const token0Amount = expandTo18Decimals(4)
     await token0.transfer(pylonInstance.address, token0Amount)
@@ -586,7 +592,7 @@ describe("Pylon", () => {
     // await expect(pylonInstance.mintAnchorTokens(account.address))
     //     .to.emit(pylonInstance, 'MintAT')
     //     .to.emit(pylonInstance, 'PylonUpdate')
-    // .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
+    //     .withArgs(3,expandTo18Decimals(4), expandTo18Decimals(3))
 
     let t = await pair.balanceOf(pylonInstance.address)
     let t0 = await token0.balanceOf(pylonInstance.address)
