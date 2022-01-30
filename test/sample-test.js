@@ -397,11 +397,11 @@ describe("Pylon", () => {
   }
   // Let's try to calculate some cases for pylon
   const mintTestCases = [
-    [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
-    [1, 10, 5, '500000000000000000', '975000000000000000','1000000000000000000', '1225000000000000000', true],
+    [2, 5, 10, '975000000000000000', '500000000000000000','1310294117647060444','1000000000000000000', false],
+    [1, 10, 5, '500000000000000000', '975000000000000000','1000000000000000000', '1950000000000000000', true],
     [2, 5, 10, '250000000000000000', '1950000000000000000','500000000000000000', '2450000000000000000', true],
-    [1, 10, 10, '1500000000000000000', '500000000000000000','2000000000000000000', '1000000000000000000', false],
-    [1, 1000, 1000, '50000000000000000000', '51000000000000000000','100000000000000000000', '101000000000000000000', true],
+    [1, 10, 10, '1500000000000000000', '500000000000000000','2055555555555556611', '1000000000000000000', false],
+    [1, 1000, 1000, '50000000000000000000', '51000000000000000000','100000000000000000000', '100010000000000000000', true],
  ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
   mintTestCases.forEach((mintCase, i) => {
     it(`mintPylon:${i}`, async () => {
@@ -424,13 +424,14 @@ describe("Pylon", () => {
           .to.emit(pylonInstance, 'PylonUpdate')
           .withArgs(expectedRes0, expectedRes1);
       // Let's check the balances, float
+
       assert((await poolTokenInstance0.balanceOf(account.address)).eq(expectedOutputAmount0));
       // Anchor
       assert((await poolTokenInstance1.balanceOf(account.address)).eq(expectedOutputAmount1));
     })
   })  // Let's try to calculate some cases for pylon
   const syncTestCase = [
-    [2, 5, 10, '975000000000000000', '500000000000000000','1225000000000000000','1000000000000000000', false],
+    [2, 5, 10, '975000000000000000', '500000000000000000','1310294117647060444','1000000000000000000', false],
  ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
   syncTestCase.forEach((mintCase, i) => {
     it(`syncPylon`, async () => {
@@ -507,8 +508,9 @@ describe("Pylon", () => {
     // Same pair tokens as before on pylon...
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("2851582893762690532526")))
     // We increase by 4 the Anchor and Float share...
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(expandTo18Decimals(174)) )
-    assert((await poolTokenInstance1.balanceOf(account.address)).eq(expandTo18Decimals(534)) )
+
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("174785185185185185207")) )
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("530007547169811320754")) )
     // Ok Let's send some higher random quantities to the pylon
     // Here we increase the float token
     // The pylon has to donate the exceeding tokens to the pair
@@ -532,11 +534,11 @@ describe("Pylon", () => {
     // We increase pylon float reserves by 242.5*1e18 and we minted that quantity for the user
     // And we donated to the pair 257.5*1e18
     // For a total of 500*1e18
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("416500000000000000000")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("459647577873337342020")) )
     // We increased pylon anchor reserves by 764 and we minted that quantity for the user
     // And we didn't donate...
     // We minted some more pool shares for the pylon for 165*1e18 float and 516*1e18 anchor
-    assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("1298500000000000000000")) )
+    assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("531449999999999999999")) )
     // And here Pylon increased the pair share 516*totalSupply/reserves1 ->
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("3144245348648861402969")));
   });
