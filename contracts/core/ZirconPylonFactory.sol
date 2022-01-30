@@ -50,13 +50,16 @@ contract ZirconPylonFactory {
         ZirconPylon(pylon).initialize(_fptA, _fptB, _tokenA, _tokenB, _pair);
         emit PylonCreated(_tokenA, _tokenB, pylon);
     }
-    // TODO: enable 2 pylons
+
+
+    // Adding Pylon
+    // First Token is always the Float and the second one is the Anchor
     function addPylon(address _pairAddress, address _tokenA, address _tokenB) external returns (address pylonAddress){
         require(_tokenA != _tokenB, 'ZF: IDENTICAL_ADDRESSES');
         require(getPylon[_tokenA][_tokenB] == address(0), 'ZF: PYLON_EXISTS');
 
-        address poolTokenA = createTokenAddress(_tokenA);
-        address poolTokenB = createTokenAddress(_tokenB);
+        address poolTokenA = createTokenAddress(_tokenA); // Float
+        address poolTokenB = createTokenAddress(_tokenB); // Anchor
         pylonAddress = createPylon(poolTokenA, poolTokenB, _tokenA, _tokenB, _pairAddress);
 
         ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, true);

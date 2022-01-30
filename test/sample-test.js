@@ -379,7 +379,6 @@ describe("Pair", () => {
 })
 
 // TODO: Put correct events emitted from Pylon SC
-// TODO: Create Test two Pylons
 // TODO: Create test fees on
 // TODO: Create Test async 100%
 // TODO: See case where we have a big dump
@@ -476,6 +475,21 @@ describe("Pylon", () => {
     await token1.transfer(pylonInstance.address, token0Amount)
     // Minting some float/anchor tokens
     await pylonInstance.mintPoolTokens(account.address, true);
+  });
+
+  it('creating two pylons', async function () {
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
+    await factoryPylonInstance.addPylon(lpAddress, token1.address, token0.address);
+    let pylonAddress = await factoryPylonInstance.getPylon(token1.address, token0.address)
+
+    let zPylon = await ethers.getContractFactory('ZirconPylon')
+    let newPylonInstance = await zPylon.attach(pylonAddress);
+    // Let's transfer some tokens to the Pylon
+    await token0.transfer(newPylonInstance.address, expandTo18Decimals(1700))
+    await token1.transfer(newPylonInstance.address, expandTo18Decimals(  5300))
+    //Let's initialize the Pylon, this should call two sync
+    await newPylonInstance.initPylon(account.address)
+    // TODO: make sonme checks here, think if there is some way of concurrency between pylons
   });
 
   it('should add float/anchor liquidity', async function () {

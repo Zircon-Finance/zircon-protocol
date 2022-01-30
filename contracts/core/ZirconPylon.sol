@@ -92,14 +92,23 @@ contract ZirconPylon {
         _blockTimestampLast = blockTimestampLast;
     }
 
-    // called once by the factory at time of deployment
+    function getPairReserves()  private view returns  (uint112 _reserve0, uint112 _reserve1) {
+        IZirconPair zp = IZirconPair(pairAddress);
+        (uint112 _reservePair0, uint112 _reservePair1,) = zp.getReserves();
+        _reserve0 = zp.token0() == token0 ? _reservePair0 : _reservePair1;
+        _reserve1 = zp.token0() == token0 ? _reservePair1 : _reservePair0;
+    }
+
+    // Called once by the factory at time of deployment
+    // token0 -> Float token
+    // token1 -> Anchor token
     function initialize(address _floatPoolToken, address _anchorPoolToken, address _token0, address _token1, address _pairAddress) external {
         require(msg.sender == factory, 'Zircon: FORBIDDEN'); // sufficient check
         floatPoolToken = _floatPoolToken;
         anchorPoolToken = _anchorPoolToken;
         pairAddress = _pairAddress;
-        token0 = _token0;
-        token1 = _token1;
+        token0 = IZirconPair(_pairAddress).token0() == _token0 ? _token0 : _token1;
+        token1 = token0 == _token0 ? _token1 : _token0;
         maxFloatSync = ZirconPylonFactory(factory).maxFloat();
         maxAnchorSync = ZirconPylonFactory(factory).maxAnchor();
     }
@@ -110,7 +119,7 @@ contract ZirconPylon {
         uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        (uint112 _reservePair0, uint112 _reservePair1,) = IZirconPair(pairAddress).getReserves();
+        (uint112 _reservePair0, uint112 _reservePair1) = getPairReserves();
         console.log("<<<Pylon:_mintPoolToken::::::::start:anchor");
         uint anchorLiquidity = _mintPoolToken(balance1, _reserve1, _reservePair1, anchorPoolToken, _to, true);
         console.log("<<<Pylon:_mintPoolToken::::::::start:float");
@@ -174,7 +183,7 @@ contract ZirconPylon {
         IZirconPoolToken at = IZirconPoolToken(anchorPoolToken);
         IZirconPair pair = IZirconPair(pairAddress);
         // Getting peir reserves and updating variables before minting
-        (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
+        (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReserves();
         // Min0 and Min1 are two variables representing the maximum that can be minted on sync
         // Min0/2 & Min1/2 remains as reserves on the pylon
         // In the case the pair hasn't been initialized pair reserves will be 0 so we take our current balance as the maximum
@@ -215,7 +224,7 @@ contract ZirconPylon {
 
     function _updateVariables() private {
 
-        (uint112 _pairReserve0, uint112 _pairReserve1,) = IZirconPair(pairAddress).getReserves();
+        (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReserves();
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         //        uint32 timeElapsed = blockTimestamp - blockTimestampLast;
         blockTimestampLast = blockTimestamp;
@@ -278,7 +287,7 @@ contract ZirconPylon {
         uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
         (uint112 _reserve0, uint112 _reserve1,) = getReserves();
-        (uint112 _reservePair0, uint112 _reservePair1,) = IZirconPair(pairAddress).getReserves();
+        (uint112 _reservePair0, uint112 _reservePair1) = getPairReserves();
 
         if (isAnchor) {
             console.log("<<<Pylon:_mintPoolToken::::::::anchor");
@@ -297,7 +306,7 @@ contract ZirconPylon {
         sync();
         IZirconPoolToken pt = IZirconPoolToken(shouldMintAnchor ? anchorPoolToken : floatPoolToken);
         IZirconPair pair = IZirconPair(pairAddress);
-        (uint112 _pairReserve0, uint112 _pairReserve1, ) = pair.getReserves();
+        (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReserves();
 
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         uint _totalSupply = pair.totalSupply();
@@ -388,7 +397,7 @@ contract ZirconPylon {
         // Then it applies the base formula:
         // Adds fees to virtualFloat and virtualAnchor
         // And then calculates Gamma so that the proportions are correct according to the formula
-        (uint112 reserve0, uint112 reserve1,) = IZirconPair(pairAddress).getReserves();
+        (uint112 reserve0, uint112 reserve1) = getPairReserves();
         // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
         uint currentK = uint(reserve0).mul(reserve1);
