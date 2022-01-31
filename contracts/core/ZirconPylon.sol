@@ -30,7 +30,7 @@ contract ZirconPylon {
 
     uint public virtualAnchorBalance; // TODO: make private
     uint public virtualFloatBalance; // TODO: make private
-    uint maximumPercentageSync;
+    uint public maximumPercentageSync;
 
     uint gammaMulDecimals; // Name represents the fact that this is always the numerator of a fraction with 10**18 as denominator.
     uint lastK;
@@ -246,7 +246,7 @@ contract ZirconPylon {
 
     function _mintPoolToken(uint _balance, uint112 _pylonReserve, uint112 _pairReserve, address _poolTokenAddress, address _to, bool isAnchor) private returns (uint liquidity) {
         console.log("<<<Pylon:_mintPoolToken::::::::start");
-        console.log("<<<Pylon:::::::PairReserve>>>> ", _pairReserve/testMultiplier);
+        console.log("<<<Pylon:::::::PairReserve>>>> ", _pairReserve/testMultiplier, "pylonRes::", _pylonReserve/testMultiplier);
         address feeTo = ZirconPylonFactory(factory).feeToo();
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         uint amountIn = _balance.sub(_pylonReserve);
@@ -260,7 +260,9 @@ contract ZirconPylon {
         uint maxSync = (_pairReserve == 0 || _pylonReserve > _pairReserve) ? maxFloatSync :
         (_pairReserve.mul(maximumPercentageSync)/100).sub(_pylonReserve);
         console.log("<<<Pylon:::::::maxSync>>>> ", maxSync/testMultiplier);
-        liquidity = (maxSync < toTransfer) ? maxSync : toTransfer;
+        require(maxSync > amountIn, "ZP: Exceeds max reserves of Pylon");
+        //  TODO: Maybe safeTransfer the tokens
+        liquidity = toTransfer;
 
         uint pts = pt.totalSupply();
         if (pts == 0) pt.mint(address(0), MINIMUM_LIQUIDITY);
@@ -269,7 +271,7 @@ contract ZirconPylon {
             if (isAnchor) {
                 liquidity = virtualAnchorBalance == 0 ? liquidity : liquidity*1e18/virtualAnchorBalance;
             } else {
-                uint numerator = pts == 0 ? liquidity : liquidity.mul(pts);
+                uint numerator = (pts == 0 || gammaMulDecimals == 0) ? liquidity : liquidity.mul(pts);
                 uint denominator = gammaMulDecimals == 0 ? 1 : pylonReserve.mul(gammaMulDecimals).mul(2)/1e18;
                 console.log("<<<Pylon:::::::minted liquidity anchor>>>> ", numerator, denominator);
                 liquidity = numerator/denominator;
@@ -430,13 +432,15 @@ contract ZirconPylon {
             if (virtualAnchorBalance < totalPoolValuePrime/2) {
                 gammaMulDecimals = 1e18 - (virtualAnchorBalance*1e18 /  totalPoolValuePrime);
             }else{
-                gammaMulDecimals = virtualFloatBalance /  (virtualFloatBalance.add(virtualAnchorBalance.mul(reserve0)/reserve1));
+                uint denominator = (virtualAnchorBalance.mul(reserve0))/reserve1;
+                console.log("<<<Pylon:sync::::::::den=", denominator);
+                gammaMulDecimals = virtualFloatBalance*1e18 /  (virtualFloatBalance.add(denominator));
             }
             // TODO: (see if make sense to insert a floor to for example 25/75)
             console.log("<<<Pylon:sync::::::::gamma'=", gammaMulDecimals/testMultiplier);
             // Calculating VAB and VFB
             console.log("<<<Pylon:sync:::::::prev:vab'=", virtualAnchorBalance/testMultiplier,
-                "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance);
+                "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
 
             virtualAnchorBalance += (feeValue.mul(gammaMulDecimals))/1e18;
             console.log("<<<Pylon:sync::::::::vab'=", virtualAnchorBalance);
