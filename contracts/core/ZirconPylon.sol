@@ -264,18 +264,18 @@ contract ZirconPylon {
         (_pairReserve.mul(maximumPercentageSync)/100).sub(_pylonReserve);
         console.log("<<<Pylon:::::::maxSync>>>> ", maxSync/testMultiplier);
         require(maxSync > toTransfer, "ZP: Exceeds");
-        //  TODO: Maybe safeTransfer the tokens
+        // TODO: Maybe safeTransfer the tokens
         liquidity = toTransfer;
 
         uint pts = pt.totalSupply();
         if (pts == 0) pt.mint(address(0), MINIMUM_LIQUIDITY);
         {
-            uint pylonReserve = uint(_pylonReserve);
+            uint pairReserve = uint(_pairReserve);
             if (isAnchor) {
                 liquidity = virtualAnchorBalance == 0 ? liquidity : liquidity*1e18/virtualAnchorBalance;
             } else {
                 uint numerator = (pts == 0 || gammaMulDecimals == 0) ? liquidity : liquidity.mul(pts);
-                uint denominator = gammaMulDecimals == 0 ? 1 : pylonReserve.mul(gammaMulDecimals).mul(2)/1e18;
+                uint denominator = gammaMulDecimals == 0 ? 1 : pairReserve.mul(gammaMulDecimals).mul(2)/1e18;
                 console.log("<<<Pylon:::::::minted liquidity anchor>>>> ", numerator, denominator);
                 liquidity = numerator/denominator;
             }

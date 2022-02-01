@@ -383,6 +383,7 @@ describe("Pair", () => {
 // TODO: Create Test async 100%
 // TODO: See case where we have a big dump
 // TODO: Extract Liquidity Tests
+// TODO: Test fees on Async
 describe("Pylon", () => {
 
   const init = async (token0Amount, token1Amount) => {
@@ -396,10 +397,10 @@ describe("Pylon", () => {
   }
   // Let's try to calculate some cases for pylon
   const mintTestCases = [
-    [5, 10, '520454545454545444', '500000000000000000','946280991735538251','909090909090909090', false],
+    [5, 10, '520454545454545444', '500000000000000000','478165938864628871','909090909090909090', false],
     [10, 5, '500000000000000000', '520454545454545444','909090909090909090', '1049545454545454522', true],
     [5, 10, '250000000000000000', '1040909090909090899','454545454545454545', '1504090909090909079', true],
-    [10, 10, '1040909090909090899', '500000000000000000','1892561983471075441', '909090909090909090', false],
+    [10, 10, '1040909090909090899', '500000000000000000','956331877729257692', '909090909090909090', false],
     [1000, 1000, '50000000000000000000', '104090909090909090899','90909090909090909090', '91504090909090909089', true],
  ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
   mintTestCases.forEach((mintCase, i) => {
@@ -430,6 +431,7 @@ describe("Pylon", () => {
           .to.emit(pylonInstance, 'PylonUpdate')
           .withArgs(expectedRes0, expectedRes1);
       // Let's check the balances, float
+      console.log(await poolTokenInstance0.balanceOf(account.address))
 
       assert((await poolTokenInstance0.balanceOf(account.address)).eq(expectedOutputAmount0));
       // Anchor
@@ -456,8 +458,9 @@ describe("Pylon", () => {
     // So we have less tokens
     // We donated some tokens to the pylon over there
     // Let's check that we have the current quantities...
+    console.log(await poolTokenInstance0.balanceOf(account.address))
 
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154545454545454545454")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154894799523620484320")) )
     assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("481818181818181818181")) )
     // Let's put some minor quantities into the pylon
     // it shouldn't mint any pool tokens for pylon, just increase reserves on pylon
@@ -503,7 +506,8 @@ describe("Pylon", () => {
     // We increase pylon float reserves by 242.5*1e18 and we minted that quantity for the user
     // And we donated to the pair 257.5*1e18
     // For a total of 500*1e18
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("170909090909090909195")) )
+    console.log(await poolTokenInstance0.balanceOf(account.address))
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154545454545454545454")) )
     // We increased pylon anchor reserves by 764 and we minted that quantity for the user
     // And we didn't donate...
     // We minted some more pool shares for the pylon for 165*1e18 float and 516*1e18 anchor
@@ -529,8 +533,9 @@ describe("Pylon", () => {
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(expandTo18Decimals(89), expandTo18Decimals(269))
 
+    console.log(await poolTokenInstance0.balanceOf(account.address))
     // We increase by 4 the Anchor and Float share...
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("161656363636363636410")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154739904724096863837")) )
     assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("481344665523156089193")) )
     // Let's check the fees...
     assert((await poolTokenInstance0.balanceOf(account2.address)).eq(ethers.BigNumber.from("158545454545454545")) )
@@ -540,7 +545,7 @@ describe("Pylon", () => {
   })
 
   const syncTestCase = [
-    [2, 5, 10, '520454545454545444', '500000000000000000','946280991735538251','909090909090909090', false],
+    [2, 5, 10, '520454545454545444', '500000000000000000','478165938864628871','909090909090909090', false],
  ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
   syncTestCase.forEach((mintCase, i) => {
     it(`syncPylon`, async () => {
@@ -592,7 +597,7 @@ describe("Pylon", () => {
     await token1.transfer(pylonInstance.address, token1Amount.div(maxSync.toNumber()+1))
     //Let's initialize the Pylon, this should call two sync
     await pylonInstance.initPylon(account.address)
-    //  TODO: Should receive max float sync
+    // TODO: Should receive max float sync
     // TODO: check that pair is correctly initialized
 
     await token1.transfer(pylonInstance.address, token0Amount.div(200))
@@ -614,10 +619,6 @@ describe("Pylon", () => {
     await newPylonInstance.initPylon(account.address)
     // TODO: make sonme checks here, think if there is some way of concurrency between pylons
   });
-
-
-
-
 
   // TODO: Do test extracting liquidity here
   it('sync', async function () {
