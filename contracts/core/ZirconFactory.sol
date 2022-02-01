@@ -67,23 +67,6 @@ contract ZirconFactory is IUniswapV2Factory {
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
-    // Token A -> Anchor Token, TokenB -> Float Token
-//    function addPylon(address pairAddress, address tokenA, address tokenB) external returns (address pylon){
-//        require(getPylon[tokenA][tokenB] == address(0), 'ZF: PYLON_EXISTS');
-//
-//        address poolTokenA = createTokenAddress(tokenA);
-//        address poolTokenB = createTokenAddress(tokenB);
-//        pylon = createPylon(poolTokenA, poolTokenB, pairAddress);
-//
-//        ZirconPoolToken(poolTokenA).initialize(tokenA, pairAddress, pylon, true);
-//        emit PoolTokenCreated(tokenA, poolTokenA);
-//
-//        ZirconPoolToken(poolTokenB).initialize(tokenB, pairAddress, pylon, false);
-//        emit PoolTokenCreated(tokenB, poolTokenB);
-//
-//        getPylon[poolTokenA][poolTokenB] = pylon;
-//    }
-
     function setFeeTo(address _feeTo) external  {
         require(msg.sender == feeToSetter, 'ZF: FORBIDDEN');
         feeTo = _feeTo;

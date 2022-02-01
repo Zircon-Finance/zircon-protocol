@@ -9,6 +9,7 @@ import "./interfaces/IERC20.sol";
 import "./ZirconPylonFactory.sol";
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import "hardhat/console.sol";
+import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 
 
 contract ZirconPylon {
@@ -21,6 +22,7 @@ contract ZirconPylon {
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
     address public factory;
+    address public pairFactory;
     address public floatPoolToken;
     address public anchorPoolToken;
     address public token0;
@@ -102,13 +104,14 @@ contract ZirconPylon {
     // Called once by the factory at time of deployment
     // token0 -> Float token
     // token1 -> Anchor token
-    function initialize(address _floatPoolToken, address _anchorPoolToken, address _token0, address _token1, address _pairAddress) external {
+    function initialize(address _floatPoolToken, address _anchorPoolToken, address _token0, address _token1, address _pairAddress, address _pairFactory) external {
         require(msg.sender == factory, 'Zircon: FORBIDDEN'); // sufficient check
         floatPoolToken = _floatPoolToken;
         anchorPoolToken = _anchorPoolToken;
         pairAddress = _pairAddress;
         token0 = IZirconPair(_pairAddress).token0() == _token0 ? _token0 : _token1;
         token1 = token0 == _token0 ? _token1 : _token0;
+        pairFactory = _pairFactory;
         maxFloatSync = ZirconPylonFactory(factory).maxFloat();
         maxAnchorSync = ZirconPylonFactory(factory).maxAnchor();
     }
@@ -236,7 +239,7 @@ contract ZirconPylon {
 
     // Minting
     function _mintFee(uint amount, address poolToken) private returns (bool feeOn){
-        address feeTo = ZirconPylonFactory(factory).feeToo();
+        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
         IZirconPoolToken pt = IZirconPoolToken(poolToken);
         feeOn = feeTo != address(0);
         if (feeOn) {
@@ -247,7 +250,7 @@ contract ZirconPylon {
     function _mintPoolToken(uint _balance, uint112 _pylonReserve, uint112 _pairReserve, address _poolTokenAddress, address _to, bool isAnchor) private returns (uint liquidity) {
         console.log("<<<Pylon:_mintPoolToken::::::::start");
         console.log("<<<Pylon:::::::PairReserve>>>> ", _pairReserve/testMultiplier, "pylonRes::", _pylonReserve/testMultiplier);
-        address feeTo = ZirconPylonFactory(factory).feeToo();
+        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         uint amountIn = _balance.sub(_pylonReserve);
         console.log("<<<Pylon:::::::amountIn>>>> ", amountIn/testMultiplier);
@@ -260,7 +263,7 @@ contract ZirconPylon {
         uint maxSync = (_pairReserve == 0 || _pylonReserve > _pairReserve) ? maxFloatSync :
         (_pairReserve.mul(maximumPercentageSync)/100).sub(_pylonReserve);
         console.log("<<<Pylon:::::::maxSync>>>> ", maxSync/testMultiplier);
-        require(maxSync > amountIn, "ZP: Exceeds");
+        require(maxSync > toTransfer, "ZP: Exceeds");
         //  TODO: Maybe safeTransfer the tokens
         liquidity = toTransfer;
 
@@ -321,7 +324,7 @@ contract ZirconPylon {
             address _token0 = token0;
             address _token1 = token1;
             IZirconPair _pair = pair;
-            address feeTo = ZirconPylonFactory(factory).feeToo();
+            address feeTo = IUniswapV2Factory(pairFactory).feeTo();
             uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
             uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
             console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);

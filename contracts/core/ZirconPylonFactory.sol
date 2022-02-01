@@ -8,7 +8,6 @@ import './interfaces/IZirconFactory.sol';
 contract ZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
-    address public feeToo;
     address public factory;
     uint public maxFloat;
     uint public maxAnchor;
@@ -20,7 +19,6 @@ contract ZirconPylonFactory {
         maxFloat = _maxFloat;
         maxAnchor = _maxAnchor;
         factory = _factory;
-        feeToo = IZirconFactory(_factory).feeTo();
     }
 
     function allPylonsLength() external view returns (uint) {
@@ -47,7 +45,7 @@ contract ZirconPylonFactory {
         assembly {
             pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPylon(pylon).initialize(_fptA, _fptB, _tokenA, _tokenB, _pair);
+        ZirconPylon(pylon).initialize(_fptA, _fptB, _tokenA, _tokenB, _pair, factory);
         emit PylonCreated(_tokenA, _tokenB, pylon);
     }
 
