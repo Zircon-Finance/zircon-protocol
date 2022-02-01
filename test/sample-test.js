@@ -460,7 +460,7 @@ describe("Pylon", () => {
     // Let's check that we have the current quantities...
     console.log(await poolTokenInstance0.balanceOf(account.address))
 
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154894799523620484320")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154545454545454545454")) )
     assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("481818181818181818181")) )
     // Let's put some minor quantities into the pylon
     // it shouldn't mint any pool tokens for pylon, just increase reserves on pylon
@@ -480,8 +480,9 @@ describe("Pylon", () => {
     // Same pair tokens as before on pylon...
     assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("122795435616575190394")))
     // We increase by 4 the Anchor and Float share...
+    console.log(await poolTokenInstance0.balanceOf(account.address))
 
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("161818181818181818228")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154894799523620484320")) )
     assert((await poolTokenInstance1.balanceOf(account.address)).eq(ethers.BigNumber.from("481826483704974271011")) )
     // Ok Let's send some higher random quantities to the pylon
     // Here we increase the float token
@@ -506,8 +507,7 @@ describe("Pylon", () => {
     // We increase pylon float reserves by 242.5*1e18 and we minted that quantity for the user
     // And we donated to the pair 257.5*1e18
     // For a total of 500*1e18
-    console.log(await poolTokenInstance0.balanceOf(account.address))
-    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("154545454545454545454")) )
+    assert((await poolTokenInstance0.balanceOf(account.address)).eq(ethers.BigNumber.from("155332467850042222141")) )
     // We increased pylon anchor reserves by 764 and we minted that quantity for the user
     // And we didn't donate...
     // We minted some more pool shares for the pylon for 165*1e18 float and 516*1e18 anchor
