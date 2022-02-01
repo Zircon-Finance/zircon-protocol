@@ -260,7 +260,7 @@ contract ZirconPylon {
         uint maxSync = (_pairReserve == 0 || _pylonReserve > _pairReserve) ? maxFloatSync :
         (_pairReserve.mul(maximumPercentageSync)/100).sub(_pylonReserve);
         console.log("<<<Pylon:::::::maxSync>>>> ", maxSync/testMultiplier);
-        require(maxSync > amountIn, "ZP: Exceeds max reserves of Pylon");
+        require(maxSync > amountIn, "ZP: Exceeds");
         //  TODO: Maybe safeTransfer the tokens
         liquidity = toTransfer;
 

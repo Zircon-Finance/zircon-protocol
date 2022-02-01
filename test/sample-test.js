@@ -384,8 +384,6 @@ describe("Pair", () => {
 // TODO: Create Test async 100%
 // TODO: See case where we have a big dump
 // TODO: Extract Liquidity Tests
-// TODO: fix sync tests
-// TODO: Create a test exceeding
 describe("Pylon", () => {
 
   const init = async (token0Amount, token1Amount) => {
@@ -513,6 +511,15 @@ describe("Pylon", () => {
     //Let's initialize the Pylon, this should call two sync
     await newPylonInstance.initPylon(account.address)
     // TODO: make sonme checks here, think if there is some way of concurrency between pylons
+  });
+
+  it('Sync LP Should fail exceeding max', async function () {
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
+    await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300))
+    // Minting some float/anchor tokens
+    await expect(pylonInstance.mintPoolTokens(account.address, true)).to.be.revertedWith(
+        "ZP: Exceeds"
+    )
   });
 
   it('should add float/anchor liquidity', async function () {
