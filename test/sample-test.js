@@ -3,12 +3,10 @@ const { expect } = require("chai");
 const { ethers } = require('hardhat');
 const assert = require("assert");
 const {BigNumber} = require("ethers");
-
 const TEST_ADDRESSES = [
   '0x1000000000000000000000000000000000000000',
   '0x2000000000000000000000000000000000000000'
 ]
-
 let factory, factoryPylonInstance,  token0, token1,
     pylonInstance, poolTokenInstance0, poolTokenInstance1,
     factoryInstance, deployerAddress, account2, account,
@@ -37,7 +35,7 @@ beforeEach(async () => {
   factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3),
       factoryInstance.address);
 
-  //Deploy Tokens
+  // Deploy Tokens
   let tok1 = await ethers.getContractFactory('Token');
   let tok1Instance = await tok1.deploy('Token1', 'TOK1');
   let tok2 = await ethers.getContractFactory('Token');
@@ -648,6 +646,26 @@ describe("Pylon", () => {
     let vab3 = await pylonInstance.virtualAnchorBalance();
     assert(vfb3.eq(ethers.BigNumber.from('454793433223574064')))
     assert(vab3.eq(ethers.BigNumber.from('909265697766764487')))
+  })
+
+  it('should burn anchor liquidity', async function () {
+    let tokenAmount = expandTo18Decimals(  10)
+    await init(expandTo18Decimals(5), tokenAmount)
+
+    await token1.transfer(pylonInstance.address, tokenAmount.div(220))
+    // Minting some float/anchor tokens
+    await pylonInstance.mintPoolTokens(account.address, true);
+    let ptb = await poolTokenInstance1.balanceOf(account.address)
+    console.log(ptb)
+    await poolTokenInstance1.transfer(pylonInstance.address, ptb)
+    await pylonInstance.burn(account.address, true)
+
+    let ftb = await poolTokenInstance0.balanceOf(account.address)
+    await poolTokenInstance1.transfer(pylonInstance.address, ftb)
+
+    await pylonInstance.burn(account.address, false)
+    // expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
+
   })
 
   // it('should add async liquidity', async function () {

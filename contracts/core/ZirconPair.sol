@@ -118,6 +118,14 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         zirconApprovedUsers[tx.origin] = true; //TODO: Remove this, only for testing purpose
     }
 
+    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
+        require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
+        uint amountInWithFee = amountIn.mul(997);
+        uint numerator = amountInWithFee.mul(reserveOut);
+        uint denominator = reserveIn.mul(1000).add(amountInWithFee);
+        amountOut = numerator / denominator;
+    }
 
 
     function tryLock() external lock {}
@@ -228,6 +236,84 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         _update(balance0, balance1, _reserve0, _reserve1);
         if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
         emit Mint(msg.sender, amount0, amount1);
+    }
+
+    // this low-level function should be called from a contract which performs important safety checks
+    function mintOneSide(address to, bool isReserve0) external lock onlyZircon returns (uint liquidity) {
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
+        uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
+        uint amount0 = balance0.sub(_reserve0);
+        uint amount1 = balance1.sub(_reserve1);
+
+        if (isReserve0) {
+            amount1 = getAmountOut(amount0/2, reserve1, reserve0);
+            amount0 = amount0/2;
+        }else {
+            amount0 = getAmountOut(amount1/2, reserve0, reserve1);
+            amount1 = amount1/2;
+        }
+
+        bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        if (_totalSupply == 0) {
+            address migrator = IZirconFactory(factory).migrator();
+            if (msg.sender == migrator) {
+                liquidity = IMigrator(migrator).desiredLiquidity();
+                require(liquidity > 0 && liquidity != uint256(-1), "ZirconPair: Bad desired liquidity");
+            } else {
+                require(migrator == address(0), "ZirconPair: Must not have migrator");
+                liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
+                _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            }
+        } else {
+            liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
+        }
+        require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
+        _mint(to, liquidity);
+
+        _update(balance0, balance1, _reserve0, _reserve1);
+        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        emit Mint(msg.sender, amount0, amount1);
+    }
+
+    // this low-level function should be called from a contract which performs important safety checks
+    function burnOneSide(address to, bool isReserve0) external lock onlyZircon returns (uint amount0, uint amount1) {
+        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+        address _token0 = token0;                                // gas savings
+        address _token1 = token1;                                // gas savings
+        uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+        uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+        uint liquidity = balanceOf[address(this)];
+
+        bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
+        amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
+
+        uint amountToAdd;
+        if (isReserve0) {
+            amountToAdd = getAmountOut(amount1, _reserve1, _reserve0);
+            amount0 += amountToAdd;
+            require(amount0 < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
+        }else{
+            amountToAdd = getAmountOut(amount0, _reserve0, _reserve1);
+            amount1 += amountToAdd;
+            require(amount1 < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
+        }
+        require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
+        _burn(address(this), liquidity);
+        if (isReserve0) {
+            _safeTransfer(_token0, to, amount0);
+        }else{
+            _safeTransfer(_token1, to, amount1);
+        }
+        balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+        balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+
+        _update(balance0, balance1, _reserve0, _reserve1);
+        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        emit Burn(msg.sender, amount0, amount1, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks

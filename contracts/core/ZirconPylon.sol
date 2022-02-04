@@ -456,6 +456,50 @@ contract ZirconPylon {
     // Called at the end of supply functions to supply any available 50-50 liquidity to underlying pool
     function _sendLiquidity() private { }
 
+    function burn(address to, bool isAnchor) external lock returns (uint claim) {
+        (uint112 _reserve0, uint112 _reserve1) = getPairReserves(); // gas savings
+        address _token0 = token0;                                // gas savings
+        address _token1 = token1;                                // gas savings
+        IZirconPoolToken pt = IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken);
+        uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+        uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+        uint liquidity = pt.balanceOf(address(this));
+        uint ptb = IZirconPair(pairAddress).balanceOf(address(this));
+        // bool feeOn = _mintFee(_reserve0, _reserve1);
+        console.log("<<<<liquidity", liquidity);
+
+        //TODO: sistema di slashing, not withdraw more than a tot
+        {
+            uint _totalSupply = pt.totalSupply();
+            uint share1 = liquidity*1e18/_totalSupply;
+            console.log("<<<<share1", share1);
+
+            if (isAnchor) {
+                uint share = (ptb.mul(virtualAnchorBalance))/(2*reserve1);
+                console.log("<<<<share", share);
+
+                claim = (share.mul(share1))/1e18; // using balances ensures pro-rata distribution
+            }else{
+                uint share = gammaMulDecimals.mul(ptb)/(2*reserve0);
+                console.log("<<<<share", liquidity);
+
+                uint claim = share.mul(share1)/1e18;
+            }
+            console.log("<<<<b0", balance0);
+            console.log("<<<<b1", balance1);
+            console.log("<<<<ptb", ptb);
+            console.log("<<<<claim", claim);
+            require(claim > 0, 'ZP: INSUFFICIENT_LIQUIDITY_BURNED');
+            _safeTransfer(pairAddress, pairAddress, claim);
+            address _to = to;
+            IZirconPair(pairAddress).burn(_to);
+        }
+        pt.burn(address(this), liquidity);
+        _update(_reserve0, _reserve1);
+        //        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        //        emit Burn(msg.sender, amount0, amount1, to);
+    }
+
     // Called by remove functions if a withdrawal requires underlying liquidity extraction
     function _extractFloatLiquidity() private {
         // Sends tokens from self if it has them
