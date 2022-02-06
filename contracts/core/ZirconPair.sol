@@ -10,6 +10,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol';
 import './libraries/SafeMath.sol';
 import "./ZirconERC20.sol";
 import "./interfaces/IZirconFactory.sol";
+import "./libraries/console.sol";
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -118,6 +119,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         zirconApprovedUsers[tx.origin] = true; //TODO: Remove this, only for testing purpose
     }
 
+
+    // TODO: centralize this
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
         require(reserveIn > 0 && reserveOut > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
@@ -278,7 +281,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burnOneSide(address to, bool isReserve0) external lock onlyZircon returns (uint amount0, uint amount1) {
+    // TODO: maybe just allow this to be called from pylon
+    function burnOneSide(address to, bool isReserve0) external lock returns (uint amount0, uint amount1) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
@@ -298,6 +302,7 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
             require(amount0 < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
             amountToAdd = getAmountOut(amount0, _reserve0, _reserve1);
+            console.log("burn one side", amount1, amountToAdd);
             amount1 += amountToAdd;
             require(amount1 < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }
