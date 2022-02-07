@@ -659,6 +659,8 @@ describe("Pylon", () => {
     assert(vab3.eq(ethers.BigNumber.from('909265697766764487')))
   })
 
+
+  // TODO: Recheck extraction results, are quite low
   it('should burn anchor liquidity', async function () {
     console.log("ohhhh shitttt ")
     console.log(await token0.balanceOf(account2.address))
@@ -684,6 +686,25 @@ describe("Pylon", () => {
     // expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
 
   })
+  it('should burn async', async function () {
+    console.log(await token0.balanceOf(account2.address))
+    console.log(await token1.balanceOf(account2.address))
+    let tokenAmount = expandTo18Decimals(  10)
+    await init(expandTo18Decimals(5), tokenAmount)
+
+    await token1.transfer(pylonInstance.address, tokenAmount.div(220))
+    // Minting some float/anchor tokens
+    await pylonInstance.mintPoolTokens(account.address, true);
+    let ptb = await poolTokenInstance1.balanceOf(account.address)
+    await poolTokenInstance1.transfer(pylonInstance.address, ptb)
+    await pylonInstance.burnAsync(account2.address, true)
+
+    console.log(await token0.balanceOf(account2.address))
+    console.log(await token1.balanceOf(account2.address))
+    // expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
+
+  })
+
 
   // it('should add async liquidity', async function () {
   //   // Let's initialize the pool and pylon

@@ -282,10 +282,12 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
 
     // this low-level function should be called from a contract which performs important safety checks
     // TODO: maybe just allow this to be called from pylon
-    function burnOneSide(address to, bool isReserve0) external lock returns (uint amount0, uint amount1) {
+    function burnOneSide(address to, bool isReserve0) external lock returns (uint amount) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
+        uint amount0;
+        uint amount1;
         uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
@@ -294,24 +296,21 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
-
-        uint amountToAdd;
         if (isReserve0) {
-            amountToAdd = getAmountOut(amount1, _reserve1, _reserve0);
-            amount0 += amountToAdd;
-            require(amount0 < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
+            amount0 += getAmountOut(amount1, _reserve1, _reserve0);
+            amount = amount0;
+            require(amount < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
-            amountToAdd = getAmountOut(amount0, _reserve0, _reserve1);
-            console.log("burn one side", amount1, amountToAdd);
-            amount1 += amountToAdd;
-            require(amount1 < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
+            amount1 += getAmountOut(amount0, _reserve0, _reserve1);
+            amount = amount1;
+            require(amount < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }
         require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
         if (isReserve0) {
-            _safeTransfer(_token0, to, amount0);
+            _safeTransfer(_token0, to, amount);
         }else{
-            _safeTransfer(_token1, to, amount1);
+            _safeTransfer(_token1, to, amount);
         }
         balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
         balance1 = IERC20Uniswap(_token1).balanceOf(address(this));

@@ -35,7 +35,7 @@ contract ZirconPoolToken is ZirconERC20 {
         require(msg.sender == factory, 'ZirconPoolToken: FORBIDDEN'); // sufficient check
         token = _token0;
         pair = _pair;
-        isAnchor = isAnchor;
+        isAnchor = _isAnchor;
         pylon = _pylon;
     }
 }
