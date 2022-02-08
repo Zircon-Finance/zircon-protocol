@@ -36,12 +36,12 @@ library ZirconLibrary {
     // @_amount is the quantity to convert
     // @_totalSupply is the supply of the pt's tranch
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
-    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _gamma, uint _vab) view internal returns (uint liquidity){
+    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) view internal returns (uint liquidity){
         if (_isAnchor) {
-            liquidity = _reserve0 == 0 ? _amount : ((_amount*1e18)/_vab);
+            liquidity = _reserve0 == 0 ? _amount : ((_amount.mul(_totalSupply))/_vab);
         }else {
             uint numerator = _totalSupply == 0 ? _amount.mul(1e18) : _amount.mul(_totalSupply);
-            uint denominator = _reserve0 == 0 ? _gamma.mul(2) : (_reserve0.mul(_gamma).mul(2))/1e18;
+            uint denominator = _reserve0 == 0 ? _gamma.mul(2) : (_reservePylon0.add(_reserve0.mul(_gamma).mul(2)))/1e18;
             liquidity = numerator/denominator;
         }
     }
@@ -50,12 +50,12 @@ library ZirconLibrary {
     // @_ptuAmount is the quantity to convert
     // @_totalSupply is the supply of the pt of the tranch
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
-    function calculatePTUToAmount(bool _isAnchor, uint _ptuAmount, uint _totalSupply, uint _reserve0, uint _gamma, uint _vab) pure internal returns (uint amount) {
+    function calculatePTUToAmount(bool _isAnchor, uint _ptuAmount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) pure internal returns (uint amount) {
         if (_isAnchor) {
-            amount = _vab.mul(_ptuAmount)/1e18;
+            amount = _vab.mul(_ptuAmount)/_totalSupply;
         } else {
-            uint numerator = (_ptuAmount.mul(_gamma)*2)/1e18;
-            amount = numerator.mul(_reserve0)/_totalSupply;
+            uint numerator = (_ptuAmount.mul(_gamma).mul(2))/1e18;
+            amount = (numerator.mul(_reserve0).add(_reservePylon0))/totalSupply;
         }
     }
 }
