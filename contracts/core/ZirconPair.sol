@@ -297,11 +297,15 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
         if (isReserve0) {
+            console.log("amount0", amount0);
             amount0 += getAmountOut(amount1, _reserve1, _reserve0);
+            console.log("amount0", amount0);
             amount = amount0;
             require(amount < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
+            console.log("amount0", amount1);
             amount1 += getAmountOut(amount0, _reserve0, _reserve1);
+            console.log("amount0", amount1);
             amount = amount1;
             require(amount < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }

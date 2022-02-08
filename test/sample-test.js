@@ -671,11 +671,6 @@ describe("Pylon", () => {
     await token1.transfer(pylonInstance.address, tokenAmount.div(220))
     // Minting some float/anchor tokens
     await pylonInstance.mintPoolTokens(account.address, true);
-    let ptb = await poolTokenInstance1.balanceOf(account.address)
-    await poolTokenInstance1.transfer(pylonInstance.address, ptb)
-    await pylonInstance.burn(account2.address, true)
-    console.log(await token0.balanceOf(account2.address))
-    console.log(await token1.balanceOf(account2.address))
     let ftb = await poolTokenInstance0.balanceOf(account.address)
     await poolTokenInstance0.transfer(pylonInstance.address, ftb)
 
@@ -683,6 +678,12 @@ describe("Pylon", () => {
     console.log(await token0.balanceOf(account2.address))
     console.log(await token1.balanceOf(account2.address))
     console.log(await pair.balanceOf(pylonInstance.address))
+
+    let ptb = await poolTokenInstance1.balanceOf(account.address)
+    await poolTokenInstance1.transfer(pylonInstance.address, ptb)
+    await pylonInstance.burn(account2.address, true)
+    console.log(await token0.balanceOf(account2.address))
+    console.log(await token1.balanceOf(account2.address))
     // expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
 
   })
