@@ -219,11 +219,11 @@ contract ZirconPylon {
         emit PylonUpdate(reserve0, reserve1);
     }
 
-    function translateToPylon(bool _isAnchor, uint toConvert) {
+    function translateToPylon(bool _isAnchor, uint toConvert) private returns (uint amount){
         IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
         uint ptb = pt.balanceOf(address(this));
         uint ptt = pt.totalSupply();
-        return toConvert.mul(ptb)/ptt;
+        amount =  toConvert.mul(ptb)/ptt;
     }
 
 
@@ -246,9 +246,10 @@ contract ZirconPylon {
         // Max0 and Max1 are two variables representing the maximum that can be minted on sync
         // Min0/2 & Min1/2 remains as reserves on the pylon
         // In the case the pair hasn't been initialized pair reserves will be 0 so we take our current balance as the maximum
+        uint reservesTranslated = translateToPylon(false, _pairReserve0);
 
-        uint112 max0 = _pairReserve0 == 0 ? uint112(balance0/maximumPercentageSync) : uint112(translateToPylon(false, _pairReserve0)/(maximumPercentageSync));
-        uint112 max1 = _pairReserve1 == 0 ? uint112(balance1/maximumPercentageSync) : uint112(translateToPylon(true, _pairReserve1)/(maximumPercentageSync));
+        uint112 max0 = _pairReserve0 == 0 ? uint112(balance0.mul(maximumPercentageSync)/100) : uint112(reservesTranslated.mul(maximumPercentageSync)/100);
+        uint112 max1 = _pairReserve1 == 0 ? uint112(balance1.mul(maximumPercentageSync)/100) : uint112(reservesTranslated.mul(maximumPercentageSync)/100);
         console.log("<<<Pylon:balances::::::::", balance0/testMultiplier, balance1/testMultiplier);
         console.log("<<<Pylon:pairReserves::::::::", _pairReserve0/testMultiplier, _pairReserve1/testMultiplier);
         // Pylon Update Minting
@@ -318,9 +319,10 @@ contract ZirconPylon {
         {
             // TODO: Clean up this to avoid using hardcoded values
             uint pylonReserve = _pylonReserve;
-            uint pairReserveTranslated = translateToPylon(isAnchor, _pairReserve);
+            uint pairReserve = _pairReserve;
+            uint pairReserveTranslated = translateToPylon(isAnchor, pairReserve);
             uint maxSync = (pairReserveTranslated == 0 || _pylonReserve > pairReserveTranslated) ? maxFloatSync :
-            (pairReserveTranslated/maximumPercentageSync).sub(_pylonReserve);
+            (pairReserveTranslated.mul(maximumPercentageSync)/100).sub(_pylonReserve);
             require(maxSync > amountIn, "ZP: Exceeds");
             uint _gamma = gammaMulDecimals;
             uint _vab = virtualAnchorBalance;
@@ -367,7 +369,9 @@ contract ZirconPylon {
     //TODO: Transfer first then calculate on basis of pool token share how many share we should give to the user
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         sync();
-        IZirconPoolToken pt = IZirconPoolToken(shouldMintAnchor ? anchorPoolToken : floatPoolToken);
+        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
+        address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
+        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         Pair memory _pair = pair;
         IZirconPair pairZircon = IZirconPair(pairAddress);
         (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
@@ -398,17 +402,12 @@ contract ZirconPylon {
         // TODO: check maximum to mint
         if (shouldMintAnchor) {
             uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
-
             liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
-
         }else{
             uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
-
-            //TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
-
+            // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
             liquidity = amountInAdjusted.mul(pt.totalSupply())/(_pairReserve0.mul(2).mul(gammaMulDecimals));
-
-            //Todo: Change toTransfer (probably remove?)
+            // Todo: Change toTransfer (probably remove?)
         }
         pt.mint(to, liquidity);
         emit MintPT(reserve1, reserve0);
