@@ -55,7 +55,7 @@ library ZirconLibrary {
             amount = _vab.mul(_ptuAmount)/_totalSupply;
         } else {
             uint numerator = (_ptuAmount.mul(_gamma).mul(2))/1e18;
-            amount = (numerator.mul(_reserve0).add(_reservePylon0))/totalSupply;
+            amount = (numerator.mul(_reserve0).add(_reservePylon0))/_totalSupply;
         }
     }
 }

@@ -413,7 +413,7 @@ describe("Pylon", () => {
       // Let's start the pylon
       await pylonInstance.initPylon(account.address)
       // Transferring some liquidity to pylon
-      let pylonRes = await pylonInstance.getReserves()
+      let pylonRes = await pylonInstance.getSyncReserves()
       let pairRes = await pair.getReserves()
 
       if (isAnchor) {
@@ -564,7 +564,7 @@ describe("Pylon", () => {
       await pylonInstance.initPylon(account.address)
       // for (let i = 0; i < 10; i++){
         // Transferring some liquidity to pylon
-      let pylonRes = await pylonInstance.getReserves()
+      let pylonRes = await pylonInstance.getSyncReserves()
       let pairRes = await pair.getReserves()
 
       if (isAnchor) {
