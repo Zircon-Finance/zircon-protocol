@@ -197,13 +197,10 @@ contract ZirconPylon {
     function updateReservesRemovingExcess(uint balance0, uint balance1, uint112 max0, uint112 max1) private {
         uint112 newReserve0 = uint112(balance0);
         uint112 newReserve1 = uint112(balance1);
-        console.log("<<<Pylon:newReserve::::::::", newReserve0/testMultiplier, newReserve1/testMultiplier);
-
         if (max0 < newReserve0) {
             uint112 excessReserves = uint112(newReserve0.sub(max0));
             _safeTransfer(pair.token0, pairAddress, excessReserves);
             reserve0 = max0;
-            console.log("<<<Pylon:excessReserves0::::::::", excessReserves/testMultiplier);
         } else {
             reserve0 = newReserve0;
         }
@@ -211,19 +208,19 @@ contract ZirconPylon {
             uint112 excessReserves = uint112(newReserve1.sub(max1));
             _safeTransfer(pair.token1, pairAddress, excessReserves);
             reserve1 = max1;
-            console.log("<<<Pylon:excessReserves1::::::::", excessReserves/testMultiplier);
         }else{
             reserve1 = newReserve1;
         }
-        console.log("<<<Pylon:new res::::::::", reserve0/testMultiplier, reserve1/testMultiplier);
         emit PylonUpdate(reserve0, reserve1);
     }
 
-    function translateToPylon(bool _isAnchor, uint toConvert) private returns (uint amount){
-        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
+    function translateToPylon(uint toConvert) private returns (uint amount){
+        IZirconPair pt = IZirconPair(pairAddress);
         uint ptb = pt.balanceOf(address(this));
         uint ptt = pt.totalSupply();
-        amount =  toConvert.mul(ptb)/ptt;
+        console.log(ptt);
+        console.log(ptb);
+        amount =  ptt == 0 || ptb == 0  ? toConvert : toConvert.mul(ptb)/ptt;
     }
 
 
@@ -246,10 +243,11 @@ contract ZirconPylon {
         // Max0 and Max1 are two variables representing the maximum that can be minted on sync
         // Min0/2 & Min1/2 remains as reserves on the pylon
         // In the case the pair hasn't been initialized pair reserves will be 0 so we take our current balance as the maximum
-        uint reservesTranslated = translateToPylon(false, _pairReserve0);
+        uint reservesTranslated0 = translateToPylon(_pairReserve0);
+        uint reservesTranslated1 = translateToPylon(_pairReserve1);
 
-        uint112 max0 = _pairReserve0 == 0 ? uint112(balance0.mul(maximumPercentageSync)/100) : uint112(reservesTranslated.mul(maximumPercentageSync)/100);
-        uint112 max1 = _pairReserve1 == 0 ? uint112(balance1.mul(maximumPercentageSync)/100) : uint112(reservesTranslated.mul(maximumPercentageSync)/100);
+        uint112 max0 = _pairReserve0 == 0 ? uint112(balance0.mul(maximumPercentageSync)/100) : uint112(reservesTranslated0.mul(maximumPercentageSync)/100);
+        uint112 max1 = _pairReserve1 == 0 ? uint112(balance1.mul(maximumPercentageSync)/100) : uint112(reservesTranslated1.mul(maximumPercentageSync)/100);
         console.log("<<<Pylon:balances::::::::", balance0/testMultiplier, balance1/testMultiplier);
         console.log("<<<Pylon:pairReserves::::::::", _pairReserve0/testMultiplier, _pairReserve1/testMultiplier);
         // Pylon Update Minting
@@ -312,45 +310,50 @@ contract ZirconPylon {
     // @_balance -> Balance OF PT
     // @_pylonReserve -> Reserves of PT on Pylon
     function _mintPoolToken(uint _balance, uint112 _pylonReserve, uint112 _pairReserve, address _poolTokenAddress, address _to, bool isAnchor) private returns (uint liquidity) {
+        console.log("mint", _poolTokenAddress);
         address feeTo = IUniswapV2Factory(pairFactory).feeTo();
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         uint amountIn = _balance.sub(_pylonReserve);
         require(amountIn > 0, "ZP: Not Enough Liquidity");
+        uint pts = pt.totalSupply();
+        if(pts != 0){
+            // When pts is null we don't update @vab and @vfb because in the init are already updated
+            if(isAnchor) {
+                virtualAnchorBalance += amountIn;
+            }else{
+                virtualFloatBalance += amountIn;
+            }
+        }
         {
             // TODO: Clean up this to avoid using hardcoded values
+            uint _pts = pts;
             uint pylonReserve = _pylonReserve;
             uint pairReserve = _pairReserve;
-            uint pairReserveTranslated = translateToPylon(isAnchor, pairReserve);
+            uint pairReserveTranslated = translateToPylon(pairReserve);
             uint maxSync = (pairReserveTranslated == 0 || _pylonReserve > pairReserveTranslated) ? maxFloatSync :
             (pairReserveTranslated.mul(maximumPercentageSync)/100).sub(_pylonReserve);
+
             require(maxSync > amountIn, "ZP: Exceeds");
             uint _gamma = gammaMulDecimals;
             uint _vab = virtualAnchorBalance;
-            uint pts = pt.totalSupply();
 
-            if(pts != 0){
-                // When pts is null we don't update @vab and @vfb because in the init are already updated
-                if(isAnchor) {
-                    virtualAnchorBalance += amountIn;
-                }else{
-                    virtualFloatBalance += amountIn;
-                }
-            }
             // When @pts is null we mint some liquidity to null address to ensure pt is never 0
             if (pts == 0) pt.mint(address(0), MINIMUM_LIQUIDITY);
-            liquidity = ZirconLibrary.calculatePTU(isAnchor, amountIn, pts, pairReserve, pylonReserve, _gamma, _vab);
-            console.log("<<<Pylon:::::::liquidity>>>> ", liquidity/testMultiplier);
-            pt.mint(_to, liquidity);
-        }
 
-        uint fee = feeTo != address(0) ? 0 : liquidity.mul(dynamicFeePercentage)/100;
+            liquidity = ZirconLibrary.calculatePTU(isAnchor, amountIn, pts, pairReserve, pylonReserve, _gamma, _vab);
+
+        }
+        uint fee = feeTo == address(0) ? 0 : liquidity.mul(dynamicFeePercentage)/100;
         if (fee != 0) _mintFee(fee, _poolTokenAddress);
+        console.log("<<<Pylon:::::::liquidity>>>> ", liquidity/testMultiplier);
+        pt.mint(_to, fee == 0 ? liquidity : liquidity.sub(fee));
 
         emit MintPT(reserve0, reserve1);
         console.log("<<<Pylon:_mintPoolToken::::::::end \n\n");
     }
     // External Function called to mint pool Token
     // Liquidity have to be sent before
+    // TODO: recheck in dump scenario if sync pool can be blocked
     function mintPoolTokens(address to, bool isAnchor) isInitialized external returns (uint liquidity) {
         sync();
         uint balance0 = IERC20Uniswap(pair.token0).balanceOf(address(this));
@@ -443,7 +446,7 @@ contract ZirconPylon {
             // Let's get the amount of total pool value own by pylon
 
             //TODO: Add system that accumulates fees to cover insolvent withdrawals (and thus changes ptb)
-            uint totalPoolValuePrime = pairReserve1.mul(2).mul(poolTokenBalance)/poolTokensPrime;
+            uint totalPoolValuePrime = translateToPylon(pairReserve1.mul(2)); //.mul(poolTokenBalance)/poolTokensPrime;
             console.log("<<<Pylon:sync::::::::tpv'=", totalPoolValuePrime/testMultiplier);
             console.log("<<<Pylon:sync::::::::r0,r1=", pairReserve0/testMultiplier, pairReserve1/testMultiplier);
 

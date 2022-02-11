@@ -1,8 +1,7 @@
-pragma solidity =0.5.16;
+pragma solidity ^0.5.16;
 
 import "./SafeMath.sol";
 
-// Library containing the principle calculations of the Zircon Protocol
 library ZirconLibrary {
     using SafeMath for uint256;
 
@@ -38,10 +37,11 @@ library ZirconLibrary {
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
     function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) view internal returns (uint liquidity){
         if (_isAnchor) {
-            liquidity = _reserve0 == 0 ? _amount : ((_amount.mul(_totalSupply))/_vab);
+            liquidity = ((_amount.mul(_totalSupply == 0 ? 1e18 : _totalSupply))/_vab);
         }else {
             uint numerator = _totalSupply == 0 ? _amount.mul(1e18) : _amount.mul(_totalSupply);
-            uint denominator = _reserve0 == 0 ? _gamma.mul(2) : (_reservePylon0.add(_reserve0.mul(_gamma).mul(2)))/1e18;
+            uint resTranslated = _reserve0.mul(_gamma).mul(2)/1e18;
+            uint denominator = _reserve0 == 0 ? _gamma.mul(2) : (_reservePylon0.add(resTranslated));
             liquidity = numerator/denominator;
         }
     }
