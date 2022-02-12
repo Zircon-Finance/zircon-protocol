@@ -378,7 +378,6 @@ describe("Pair", () => {
 })
 
 // TODO: Put correct events emitted from Pylon SC
-// TODO: Create Test async 100%
 // TODO: See case where we have a big dump
 // TODO: Extract Liquidity Tests
 describe("Pylon", () => {
