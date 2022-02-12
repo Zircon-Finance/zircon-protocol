@@ -213,7 +213,7 @@ contract ZirconPylon {
         IZirconPair pt = IZirconPair(pairAddress);
         uint ptb = pt.balanceOf(address(this));
         uint ptt = pt.totalSupply();
-        amount =  ptt == 0 || ptb == 0  ? toConvert : toConvert.mul(ptb)/ptt;
+        amount =  (ptt == 0 || ptb == 0) ? toConvert : toConvert.mul(ptb)/ptt;
     }
 
 
@@ -493,26 +493,20 @@ contract ZirconPylon {
                 "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
 
             if (virtualAnchorBalance < totalPoolValueAnchorPrime/2) {
-
                 gammaMulDecimals = 1e18 - (virtualAnchorBalance*1e18 /  totalPoolValueAnchorPrime);
-            }else{
-                //                uint denominator = (virtualAnchorBalance.mul(pairReserve0))/pairReserve1;
-                //                console.log("<<<Pylon:sync::::::::den=", denominator);
+                console.log("<<<Pylon:sync::::::::gammaAnchor'=", gammaMulDecimals/testMultiplier);
 
+            }else{
                 //TODO: Check that this works and there are no gamma that assume gamma is ftv/atv+ftv
                 gammaMulDecimals = (virtualFloatBalance*1e18) /  totalPoolValueFloatPrime;
+                console.log("<<<Pylon:sync::::::::gammaFloat'=", gammaMulDecimals/testMultiplier);
+
             }
             // TODO: (see if make sense to insert a floor to for example 25/75)
-            console.log("<<<Pylon:sync::::::::gamma'=", gammaMulDecimals/testMultiplier);
-            // Calculating VAB and VFB
-            console.log("<<<Pylon:sync:::::::prev:vab'=", virtualAnchorBalance/testMultiplier,
-                "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
-
             //TODO: Think of way to adjust it by using tpv/(ftv+atv) because otherwise anchors get more fees than they should
             virtualAnchorBalance += (feeValueAnchor.mul(gammaMulDecimals))/1e18;
-            console.log("<<<Pylon:sync::::::::vab'=", virtualAnchorBalance);
             virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValueFloat)/1e18;
-            console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance);
+            console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance, "vab", virtualAnchorBalance);
         }
         console.log("<<<Pylon:sync::::::::end\n\n");
     }
@@ -546,9 +540,7 @@ contract ZirconPylon {
 
         claim = (userShare.mul(pylonShare))/1e18;
         require(claim > 0, 'ZP: INSUFFICIENT_LIQUIDITY_BURNED');
-
         console.log("<<<<ptb", ptb);
-        console.log("<<<<lptTotalSupply", lptTotalSupply);
         console.log("<<<<claim", claim);
     }
 
@@ -556,14 +548,19 @@ contract ZirconPylon {
     // Liquidity has to be sent before
     function burnAsync(address _to, bool _isAnchor) external lock {
         sync();
+
         IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
         uint liquidity = pt.balanceOf(address(this));
         require(liquidity > 0, "ZP: Not enough liquidity inserted");
-
         uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
+        console.log("PTU", ptu);
+        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
         _safeTransfer(pairAddress, pairAddress, ptu);
-        IZirconPair(pairAddress).burn(_to);
+        (uint amount0, uint amount1) = IZirconPair(pairAddress).burn(_to);
+        virtualAnchorBalance -= (isFloatReserve0 ? amount1 : amount0);
+        virtualFloatBalance -= (isFloatReserve0 ? amount0 : amount1);
     }
+
     // Function That calculates the amount of reserves in PTU
     // and the amount of the minimum from liquidity and reserves
     // Helper function for burn
@@ -577,8 +574,6 @@ contract ZirconPylon {
         //Calculates maxPTs that can be serviced through Pylon Reserves
         uint pylonReserve = isAnchor ? _pylonReserve1 : _pylonReserve0;
         reservePT = ZirconLibrary.calculatePTU(isAnchor, pylonReserve, _totalSupply, uint(_reserve0), pylonReserve, _gamma, _vab);
-
-        console.log("<<< calculatePTUToAmount", reservePT, pylonReserve, _liquidity);
         amount = ZirconLibrary.calculatePTUToAmount(isAnchor, Math.min(reservePT, _liquidity), _totalSupply, _reserve0, pylonReserve, _gamma, _vab);
     }
 
