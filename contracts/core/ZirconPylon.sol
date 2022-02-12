@@ -147,25 +147,22 @@ contract ZirconPylon {
         // Let's see if the pair contains some reserves
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
         // If pair contains reserves we have to use the ratio of the Pair so...
+        virtualFloatBalance = balance0;
+        virtualAnchorBalance = balance1;
+        uint denominator;
         if (_reservePair0 > 0 && _reservePair1 > 0) {
             // Getting maximum to initialize the VFB and VAB variables
             // (uint maxX, uint maxY) = ZirconLibrary._getMaximum(_reservePair0, _reservePair1, balance0, balance1);
             // Todo: Check Potential edge case when users supply imbalanced tokens
-            virtualFloatBalance = balance0;
-            virtualAnchorBalance = balance1;
             //            console.log("<<<Pylon:initPylon::::maxX=", maxX, ":::maxY", maxY);
-            uint denominator = (virtualAnchorBalance.mul(_reservePair0))/_reservePair1;
+            denominator = (virtualAnchorBalance.mul(_reservePair0))/_reservePair1;
             //This is gamma formula when FTV <= 50%
-            gammaMulDecimals = (virtualFloatBalance*1e18) /  (virtualFloatBalance.add(denominator));
         }else {
             // Here we initialize the variables of the sync
-            virtualFloatBalance = balance0;
-            virtualAnchorBalance = balance1;
-
-            uint denominator = (virtualAnchorBalance.mul(balance0))/balance1;
-            gammaMulDecimals = (virtualFloatBalance*1e18) /  (virtualFloatBalance.add(denominator));
-
+            denominator = (virtualAnchorBalance.mul(balance0))/balance1;
         }
+        gammaMulDecimals = (virtualFloatBalance*1e18) /  (virtualFloatBalance.add(denominator));
+
         // Time to mint some tokens
         _mintPoolToken(balance1, 0, _reservePair1, anchorPoolToken, _to, true);
         _mintPoolToken(balance0, 0, _reservePair0, floatPoolToken, _to, false);
@@ -207,7 +204,7 @@ contract ZirconPylon {
         emit PylonUpdate(reserve0, reserve1);
     }
 
-    function translateToPylon(uint toConvert) private returns (uint amount){
+    function translateToPylon(uint toConvert) view private returns (uint amount){
         IZirconPair pt = IZirconPair(pairAddress);
         uint ptb = pt.balanceOf(address(this));
         uint ptt = pt.totalSupply();
@@ -225,7 +222,6 @@ contract ZirconPylon {
         uint balance1 = IERC20Uniswap(_pair.token1).balanceOf(address(this));
 
         // Intializing the variables, (Maybe gas consuming let's see how to sort out this
-        IZirconPair pair = IZirconPair(pairAddress);
         // Getting peir reserves and updating variables before minting
         (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
 
@@ -249,7 +245,7 @@ contract ZirconPylon {
             // Transferring tokens to pair and minting
             if(px != 0) _safeTransfer(_pair.token0, pairAddress, px);
             if(py != 0) _safeTransfer(_pair.token1, pairAddress, py);
-            pair.mint(address(this));
+            IZirconPair(pairAddress).mint(address(this));
 
             // Removing tokens sent to the pair to balances
             balance0 -= px;
@@ -259,8 +255,6 @@ contract ZirconPylon {
 
         // Let's remove the tokens that are above max0 and max1, and donate them to the pool
         // This is for cases where somebody just donates tokens to the pool; tx reverts if this done via core functions
-
-        // TODO: Instead of donating we can use async-100% and create some LP tokens for pair
         updateReservesRemovingExcess(balance0, balance1, max0, max1);
         _updateVariables();
 
@@ -306,7 +300,6 @@ contract ZirconPylon {
         }
         {
             // TODO: Clean up this to avoid using hardcoded values
-            uint _pts = pts;
             uint pylonReserve = _pylonReserve;
             uint pairReserve = _pairReserve;
             uint pairReserveTranslated = translateToPylon(pairReserve);
@@ -390,7 +383,6 @@ contract ZirconPylon {
             address _token0 = _pair.token0;
             address _token1 = _pair.token1;
             IZirconPair _pairZircon = pairZircon;
-            address feeTo = IUniswapV2Factory(pairFactory).feeTo();
             uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
             uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
             console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);
@@ -457,7 +449,7 @@ contract ZirconPylon {
 
             // Here it is going to be useful to have a Minimum Liquidity
             // If not we can have some problems
-            uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
+//            uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
 
             // Let's get the amount of total pool value own by pylon
 
@@ -504,7 +496,7 @@ contract ZirconPylon {
 
     // TODO: sistema di slashing, not withdraw more than a total
     function calculateLPTU(bool _isAnchor, uint _liquidity, uint _ptTotalSupply) view private returns (uint claim){
-        (uint112 _reserve0, uint112 _reserve1) = getPairReservesNormalized(); // gas savings
+        (, uint112 _reserve1) = getPairReservesNormalized(); // gas savings
         uint ptb = IZirconPair(pairAddress).balanceOf(address(this));
         uint lptTotalSupply = IZirconPair(pairAddress).totalSupply();
         uint userShare = _liquidity*1e18/_ptTotalSupply;
@@ -558,7 +550,7 @@ contract ZirconPylon {
     // Function That calculates the amount of reserves in PTU
     // and the amount of the minimum from liquidity and reserves
     // Helper function for burn
-    function preBurn(bool isAnchor, uint _totalSupply, uint _liquidity) private returns (uint reservePT, uint amount) {
+    function preBurn(bool isAnchor, uint _totalSupply, uint _liquidity) view private returns (uint reservePT, uint amount) {
         // variables declaration
         uint _gamma = gammaMulDecimals;
         uint _vab = virtualAnchorBalance;

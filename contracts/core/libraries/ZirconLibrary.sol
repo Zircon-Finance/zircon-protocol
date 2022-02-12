@@ -35,7 +35,7 @@ library ZirconLibrary {
     // @_amount is the quantity to convert
     // @_totalSupply is the supply of the pt's tranch
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
-    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) view internal returns (uint liquidity){
+    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) pure internal returns (uint liquidity){
         if (_isAnchor) {
             liquidity = ((_amount.mul(_totalSupply == 0 ? 1e18 : _totalSupply))/_vab);
         }else {
