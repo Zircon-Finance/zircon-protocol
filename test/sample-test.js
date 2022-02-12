@@ -381,7 +381,6 @@ describe("Pair", () => {
 // TODO: Create Test async 100%
 // TODO: See case where we have a big dump
 // TODO: Extract Liquidity Tests
-// TODO: Test fees on Async
 describe("Pylon", () => {
 
   const init = async (token0Amount, token1Amount) => {
@@ -538,6 +537,44 @@ describe("Pylon", () => {
 
   })
 
+  it('should test fees on async 100', async () => {
+    await factoryInstance.setFeeTo(account2.address)
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
+
+    const token0Amount = expandTo18Decimals(4)
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await expect(pylonInstance.mintAsync100(account.address, false))
+    // Then Anchor...
+    await token1.transfer(pylonInstance.address, token0Amount)
+    await expect(pylonInstance.mintAsync100(account.address, true))
+    // We increase by 4 the Anchor and Float share...
+    expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("86449627588508447"))
+    expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from("957821856287425157"))
+    // Let's check the fees...
+    expect(await poolTokenInstance0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("4549980399395180"))
+    expect(await poolTokenInstance1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("50411676646706587"))
+  })
+
+  it('should test fees on async', async () => {
+    await factoryInstance.setFeeTo(account2.address)
+    await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
+
+    const token0Amount = expandTo18Decimals(4)
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await token1.transfer(pylonInstance.address, token0Amount)
+    await expect(pylonInstance.mintAsync(account.address, false))
+    // Then Anchor...
+    await token0.transfer(pylonInstance.address, token0Amount)
+    await token1.transfer(pylonInstance.address, token0Amount)
+    await expect(pylonInstance.mintAsync(account.address, true))
+    // We increase by 4 the Anchor and Float share...
+    expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("86422959095777750"))
+    expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from("966603773584905676"))
+    // Let's check the fees...
+    expect(await poolTokenInstance0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("4545454545454545"))
+    expect(await poolTokenInstance1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("50000000000000000"))
+  })
+
   const syncTestCase = [
     [2, 5, 10, '20454545454545454', '20454545454545454','92989955118615111','1000000000000000000', false],
  ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
@@ -653,7 +690,6 @@ describe("Pylon", () => {
 
   // TODO: Recheck extraction results, are quite low
   it('should burn anchor liquidity', async function () {
-    console.log("ohhhh shitttt ")
     console.log(await token0.balanceOf(account2.address))
     console.log(await token1.balanceOf(account2.address))
     let token1Amount = expandTo18Decimals(  10)
