@@ -39,20 +39,16 @@ contract ZirconPylon {
 
     uint public virtualAnchorBalance; // TODO: make private
     uint public virtualFloatBalance; // TODO: make private
-    uint public maximumPercentageSync; //TODO: Error calculating this in the code should be x*maxPercentageSync/100
+    uint public maximumPercentageSync;
     uint public dynamicFeePercentage;
 
     uint gammaMulDecimals; // Name represents the fact that this is always the numerator of a fraction with 10**18 as denominator.
     uint lastK;
     uint lastPoolTokens;
-    uint percentageReserve; // Amount reserved for liquidity withdrawals/insertions
-    uint ownedPoolTokens; // Used to track the pool tokens it owns but may not necessarily contain as balanceOf
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves (always anchor)
     uint112 private reserve1;           // us es single storage slot, accessible via getReserves (always float)
     uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
-    uint public price0CumulativeLast;
-    uint public price1CumulativeLast;
     uint private initialized = 0;
     uint private testMultiplier = 1e16;
 
