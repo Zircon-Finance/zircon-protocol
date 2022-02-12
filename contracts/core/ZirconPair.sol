@@ -242,7 +242,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mintOneSide(address to, bool isReserve0) external lock onlyZircon returns (uint liquidity) {
+    //TODO: remember only zircon
+    function mintOneSide(address to, bool isReserve0) external lock returns (uint liquidity) {
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));
