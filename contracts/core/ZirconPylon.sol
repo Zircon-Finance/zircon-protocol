@@ -190,18 +190,17 @@ contract ZirconPylon {
         if (max0 < newReserve0) {
             console.log("excess");
             uint112 excessReserves = uint112(newReserve0.sub(max0));
-            virtualFloatBalance -= excessReserves;
             _safeTransfer(pair.token0, pairAddress, excessReserves);
+            IZirconPair(pairAddress).mintOneSide(address(this), isFloatReserve0);
             reserve0 = max0;
         } else {
             reserve0 = newReserve0;
         }
         if (max1 < newReserve1) {
             console.log("excess");
-
             uint112 excessReserves = uint112(newReserve1.sub(max1));
             _safeTransfer(pair.token1, pairAddress, excessReserves);
-            virtualAnchorBalance -= excessReserves;
+            IZirconPair(pairAddress).mintOneSide(address(this), !isFloatReserve0);
             reserve1 = max1;
         }else{
             reserve1 = newReserve1;
@@ -221,7 +220,6 @@ contract ZirconPylon {
     // Any excess of balance is going to be donated to the pair
     // So... here we get the maximum of both tokens and we mint Pool Tokens
     function _update() private {
-        console.log("<<<Pylon:_update::::::::start");
         // Let's take the current balances
         Pair memory _pair = pair;
         uint balance0 = IERC20Uniswap(_pair.token0).balanceOf(address(this));
@@ -555,6 +553,7 @@ contract ZirconPylon {
         uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
         console.log("PTU", ptu);
         console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
+
         _safeTransfer(pairAddress, pairAddress, ptu);
         (uint amount0, uint amount1) = IZirconPair(pairAddress).burn(_to);
         virtualAnchorBalance -= (isFloatReserve0 ? amount1 : amount0);
@@ -596,16 +595,13 @@ contract ZirconPylon {
 
             // Here we calculate max PTU to extract sync reserve + amount in reserves
             (uint reservePT, uint _amount) = preBurn(isAnchor, _totalSupply, liquidity);
-            console.log("preburn", _amount);
             _safeTransfer(isAnchor ? _pair.token1 : _pair.token0, to, _amount);
 
             amount = _amount;
 
             if (reservePT < liquidity) {
-                console.log("<<< calculateLPTU");
                 _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, liquidity.sub(reservePT), _totalSupply));
                 amount += IZirconPair(_pairAddress).burnOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);  // XOR
-
                 //Bool combines choice of anchor or float with which token is which in the pool
             }
 

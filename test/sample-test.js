@@ -475,7 +475,7 @@ describe("Pylon", () => {
         .withArgs(ethers.BigNumber.from('6954545454545454545'), ethers.BigNumber.from('14840909090909090908'))
     // Same pair tokens as before on pylon..
 
-    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266738974033782774690"))
+    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266786308805872655364"))
     // We increase by 4 the Anchor and Float share...
     expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90999607987903627"))
     expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from("1008233532934131744"))
@@ -490,9 +490,8 @@ describe("Pylon", () => {
         .to.emit(pylonInstance, 'PylonUpdate')
         .withArgs(ethers.BigNumber.from("11954545454545454545"), ethers.BigNumber.from('14840909090909090908'))
     // Same pair tokens as before on pylon...
-    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266738974033782774690"))
+    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266786308805872655364"))
 
-    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266738974033782774690"))
     // Let's send some anchor token
     // Pylon should mint some pair tokens
     const newAmount1 = expandTo18Decimals(8)
@@ -504,13 +503,13 @@ describe("Pylon", () => {
     // We increase pylon float reserves by 242.5*1e18 and we minted that quantity for the user
     // And we donated to the pair 257.5*1e18
     // For a total of 500*1e18
-    expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("91233752239211266"))
+    expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("91233020913024247"))
     // We increased pylon anchor reserves by 764 and we minted that quantity for the user
     // And we didn't donate...
     // We minted some more pool shares for the pylon for 165*1e18 float and 516*1e18 anchor
     expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from("1024567213143668504"))
     // And here Pylon increased the pair share 516*totalSupply/reserves1 ->
-    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266738974033782774690"));
+    expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("266786308805872655364"));
   });
 
   it('should test fees on sync', async () => {
@@ -641,14 +640,14 @@ describe("Pylon", () => {
     let vfb = await pylonInstance.virtualFloatBalance();
     let vab2 = await pylonInstance.virtualAnchorBalance();
     expect(vfb).to.eq(ethers.BigNumber.from('459574189648471969'))
-    expect(vab2).to.eq(ethers.BigNumber.from('786309367773723455'))
+    expect(vab2).to.eq(ethers.BigNumber.from('909646379229805364'))
     // Let's mint some LP Tokens
     // no fee changes so vab & vfb should remain the same
     await addLiquidity(expandTo18Decimals(5), expandTo18Decimals(  10))
     let vfb3 = await pylonInstance.virtualFloatBalance();
     let vab3 = await pylonInstance.virtualAnchorBalance();
     expect(vfb3).to.eq(ethers.BigNumber.from('459574189648471969'))
-    expect(vab3).to.eq(ethers.BigNumber.from('786309367773723455'))
+    expect(vab3).to.eq(ethers.BigNumber.from('909646379229805364'))
   })
 
 
@@ -699,8 +698,8 @@ describe("Pylon", () => {
     await poolTokenInstance1.transfer(pylonInstance.address, ptb)
     await pylonInstance.burnAsync(account2.address, true)
 
-    expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("232386363636363413"))
-    expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("465839832261246968"))
+    expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("238089716406042708"))
+    expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("477272727272726814"))
 
 
     let ftb = await poolTokenInstance0.balanceOf(account.address)
@@ -708,8 +707,8 @@ describe("Pylon", () => {
     await pylonInstance.burnAsync(account2.address, false)
 
 
-    expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("343465909090907756"))
-    expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("688508994136730975"))
+    expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("346317585475747434"))
+    expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("694225441642470958"))
 
 
   })
