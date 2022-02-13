@@ -179,7 +179,6 @@ contract ZirconPylon {
     // If we have any excess reserves we donate them to the pool
 
     //TODO: Function is sensitive, check if it can't be abused
-    //TODO: In case of donation this can get tircky. Pay Attention :D
     function updateReservesRemovingExcess(uint balance0, uint balance1, uint112 max0, uint112 max1) private {
         uint112 newReserve0 = uint112(balance0);
         uint112 newReserve1 = uint112(balance1);

@@ -11,7 +11,6 @@ contract ZirconFactory is IUniswapV2Factory {
     address public migrator;
 
     mapping(address => mapping(address => address)) public getPair;
-//    mapping(address => mapping(address => address)) public getPylon;
     address[] public allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -29,26 +28,6 @@ contract ZirconFactory is IUniswapV2Factory {
     function pairCodeHash() external pure returns (bytes32) {
         return keccak256(type(ZirconPair).creationCode);
     }
-
-//    function createTokenAddress(address _token) private returns (address poolToken) {
-//        // Creaating Token
-//        bytes memory bytecode = type(ZirconPoolToken).creationCode;
-//        bytes32 salt = keccak256(abi.encodePacked(_token, allPairs.length));
-//        assembly {
-//            poolToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
-//        }
-//    }
-
-//    function createPylon(address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
-//        // Creaating Token
-//        bytes memory bytecode = type(ZirconPylon).creationCode;
-//        bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB, _pair));
-//        assembly {
-//            pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
-//        }
-//        ZirconPylon(pylon).initialize(_tokenA, _tokenB, _pair);
-//        emit PylonCreated(_tokenA, _tokenB, pylon);
-//    }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'ZF: IDENTICAL_ADDRESSES');
@@ -81,4 +60,5 @@ contract ZirconFactory is IUniswapV2Factory {
         require(msg.sender == feeToSetter, 'ZF: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
+
 }
