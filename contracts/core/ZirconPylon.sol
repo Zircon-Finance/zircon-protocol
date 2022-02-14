@@ -280,6 +280,10 @@ contract ZirconPylon {
         }
     }
 
+    function getMaximumSync(bool isAnchor) internal returns (uint max) {
+        max = isAnchor ? maxAnchorSync : maxFloatSync;
+    }
+
     // Mint Pool Token
     // @_balance -> Balance OF PT
     // @_pylonReserve -> Reserves of PT on Pylon
@@ -302,7 +306,7 @@ contract ZirconPylon {
             uint pylonReserve = _pylonReserve;
             uint pairReserve = _pairReserve;
             uint pairReserveTranslated = translateToPylon(pairReserve);
-            uint maxSync = (pairReserveTranslated == 0 || _pylonReserve > pairReserveTranslated) ? maxFloatSync :
+            uint maxSync = (pairReserveTranslated == 0 || _pylonReserve > pairReserveTranslated) ? getMaximumSync(isAnchor) :
             (pairReserveTranslated.mul(maximumPercentageSync)/100).sub(_pylonReserve);
 
             require(maxSync > amountIn, "ZP: Exceeds");
