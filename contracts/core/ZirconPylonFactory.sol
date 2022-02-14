@@ -11,6 +11,8 @@ contract ZirconPylonFactory {
     address public factory;
     uint public maxFloat;
     uint public maxAnchor;
+    uint public maximumPercentageSync;
+    uint public dynamicFeePercentage;
 
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
@@ -19,6 +21,8 @@ contract ZirconPylonFactory {
         maxFloat = _maxFloat;
         maxAnchor = _maxAnchor;
         factory = _factory;
+        maximumPercentageSync = 10;
+        dynamicFeePercentage = 5;
     }
 
     function allPylonsLength() external view returns (uint) {

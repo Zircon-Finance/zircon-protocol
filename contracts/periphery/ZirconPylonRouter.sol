@@ -2,6 +2,10 @@ pragma solidity =0.6.6;
 
 import "./ZirconRouter.sol";
 import "./interfaces/IZirconPylonRouter.sol";
+import "../core/interfaces/IZirconPair.sol";
+import "../core/interfaces/IZirconPylonFactory.sol";
+import "../core/interfaces/IZirconFactory.sol";
+import "./libraries/ZirconPeriphericalLibrary.sol";
 
 contract ZirconPylonRouter is IZirconPylonRouter {
     address public immutable override factory;
@@ -31,37 +35,29 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         uint amountMin,
         bool isAnchor
     ) internal virtual returns (uint amount) {
+
         // checks if pylon contains pair of tokens
-        if (IZirconFactory(pylonFactory).getPylon(tokenA, tokenB) == address(0)) {
-            revert;
-            return;
-        }
-        // Checking if pylon is initialized
         address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-        if (!ZirconLibrary.isInizialized(tokenA, tokenB, pair)) {
-            revert;
-            return;
-        }
+        require(IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) != address(0), "ZPR: Pylon not created");
+        // Checking if pylon is initialized
+        require(ZirconPeriphericalLibrary.isInitialized(factory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
 
-        // create the pair if it doesn't exist yet
-//        if (IUniswapV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
-//            IUniswapV2Factory(factory).createPair(tokenA, tokenB);
-//        }
-
-        // calculates
         (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
-        (uint reservePylonA, uint reservePylonB) = ZirconLibrary.getReserves(factory, tokenA, tokenB);
+        (uint reservePylonA, uint reservePylonB) = ZirconPeriphericalLibrary.getSyncReserves(factory, tokenA, tokenB, pair);
+        address pylonAddress = ZirconPeriphericalLibrary.pylonFor(factory, tokenA, tokenB, pair);
 
-        uint amountBOptimal = UniswapV2Library.quote(amountADesired, reserveA, reserveB);
-        if (amountBOptimal <= amountBDesired) {
-            require(amountBOptimal >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
-            (amountA, amountB) = (amountADesired, amountBOptimal);
-        } else {
-            uint amountAOptimal = UniswapV2Library.quote(amountBDesired, reserveB, reserveA);
-            assert(amountAOptimal <= amountADesired);
-            require(amountAOptimal >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
-            (amountA, amountB) = (amountAOptimal, amountBDesired);
-        }
+        IZirconPair zp = IZirconPair(pair);
+        IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
+        uint max = ZirconPeriphericalLibrary.maximumSync(
+            isAnchor ? reserveA : reserveB,
+            isAnchor ? reservePylonA : reservePylonB,
+            pf.maximumPercentageSync(),
+            isAnchor ? pf.maxAnchor() : pf.maxFloat(),
+                zp.totalSupply(),
+                zp.balanceOf(pylonAddress));
+
+        require(amountDesired < max, "ZPRouter: EXCEEDS_MAX_SYNC");
+
 
     }
     function addSyncLiquidity(
@@ -72,11 +68,11 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB, uint liquidity) {
-        (amountA, amountB) = _addSyncLiquidity(tokenA, tokenB, amountDesired, amountMin);
+    ) virtual override ensure(deadline)  external returns (uint amount, uint liquidity) {
+        (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, amountMin, isAnchor);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amount);
+        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amount);
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
 

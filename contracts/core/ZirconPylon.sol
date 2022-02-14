@@ -49,7 +49,7 @@ contract ZirconPylon {
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves (always anchor)
     uint112 private reserve1;           // us es single storage slot, accessible via getReserves (always float)
     uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
-    uint private initialized = 0;
+    uint public initialized = 0;
     uint private testMultiplier = 1e16;
 
     uint private unlocked = 1;
@@ -93,8 +93,6 @@ contract ZirconPylon {
 
     constructor() public {
         factory = msg.sender;
-        maximumPercentageSync = 10;
-        dynamicFeePercentage = 5;
     }
 
     function getSyncReserves()  public view returns  (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
@@ -129,6 +127,8 @@ contract ZirconPylon {
         // Retrieving maximum sync from ZPF
         maxFloatSync = ZirconPylonFactory(factory).maxFloat();
         maxAnchorSync = ZirconPylonFactory(factory).maxAnchor();
+        maximumPercentageSync = ZirconPylonFactory(factory).maximumPercentageSync();
+        dynamicFeePercentage = ZirconPylonFactory(factory).dynamicFeePercentage();
     }
 
     // On init pylon we have to handle two cases
@@ -435,7 +435,7 @@ contract ZirconPylon {
         _updateVariables();
     }
 
-    function sync() public {
+    function sync() private {
         if(msg.sender != pairAddress) { IZirconPair(pairAddress).tryLock(); }
         // So this thing needs to get pool reserves, get the price of the float asset in anchor terms
         // Then it applies the base formula:

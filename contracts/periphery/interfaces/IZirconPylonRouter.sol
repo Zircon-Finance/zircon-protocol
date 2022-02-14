@@ -3,6 +3,7 @@ pragma solidity >=0.6.2;
 interface IZirconPylonRouter {
     function factory() external pure returns (address);
     function WETH() external pure returns (address);
+    function pylonFactory() external pure returns (address);
 
     function addSyncLiquidity(
         address tokenA,
@@ -12,7 +13,7 @@ interface IZirconPylonRouter {
         bool isAnchor,
         address to,
         uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
+    ) external returns (uint amount, uint liquidity);
 
     function addSyncLiquidityETH(
         address token,
