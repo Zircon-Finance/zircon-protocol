@@ -4,6 +4,28 @@ import "./SafeMath.sol";
 
 library ZirconLibrary {
     using SafeMath for uint256;
+    // calculates the CREATE2 address for a pair without making any external calls
+    //TODO: Update init code hash with Zircon Pylon code hash
+    function pylonFor(address factory, address tokenA, address tokenB, address pair) internal pure returns (address pair) {
+        pair = address(uint(keccak256(abi.encodePacked(
+                hex'ff',
+                factory,
+                keccak256(abi.encodePacked(tokenA, tokenB, pair)),
+                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+            ))));
+    }
+
+    // fetches and gets Reserves
+    function getSyncReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveF, uint reserveA) {
+        (reserveF, reserveA) = IZirconPylon(pylonFor(factory, tokenA, tokenB)).getSyncReserves();
+    }
+
+    // fetches and sorts the reserves for a pair
+    function maximumSync(uint reserve, uint reservePylon) external pure returns (uint maximum) {
+        (address token0,) = sortTokens(tokenA, tokenB);
+        (uint reserve0, uint reserve1,) = IZirconPylon(pylonFor(factory, tokenA, tokenB)).getReserves();
+        (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+    }
 
     // Same Function as Uniswap Library, used here for incompatible solidity versions
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {

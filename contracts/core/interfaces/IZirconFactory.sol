@@ -6,7 +6,6 @@ interface IZirconFactory {
     function migrator() external view returns (address);
 
     function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function getPylon(address tokenA, address tokenB) external view returns (address pair);
     function allPairs(uint) external view returns (address pair);
     function allPairsLength() external view returns (uint);
 
