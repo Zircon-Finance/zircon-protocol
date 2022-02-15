@@ -32,7 +32,6 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint amountDesired,
-        uint amountMin,
         bool isAnchor
     ) internal virtual returns (uint amount) {
 
@@ -53,27 +52,30 @@ contract ZirconPylonRouter is IZirconPylonRouter {
             isAnchor ? reservePylonA : reservePylonB,
             pf.maximumPercentageSync(),
             isAnchor ? pf.maxAnchor() : pf.maxFloat(),
-                zp.totalSupply(),
-                zp.balanceOf(pylonAddress));
+            zp.totalSupply(),
+            zp.balanceOf(pylonAddress));
 
-        require(amountDesired < max, "ZPRouter: EXCEEDS_MAX_SYNC");
+        require(amountDesired <= max, "ZPRouter: EXCEEDS_MAX_SYNC");
 
-
+        amount = amountDesired;
     }
     function addSyncLiquidity(
         address tokenA,
         address tokenB,
         uint amountDesired,
-        uint amountMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amount, uint liquidity) {
-        (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, amountMin, isAnchor);
+    ) virtual override ensure(deadline) external returns (uint amount, uint liquidity) {
+        (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amount);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amount);
-        liquidity = IUniswapV2Pair(pair).mint(to);
+        address pylon = ZirconPeriphericalLibrary.pylonFor(factory, tokenA, tokenB, pair);
+        if (isAnchor) {
+            TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amount);
+        }else{
+            TransferHelper.safeTransferFrom(tokenA, msg.sender, pylon, amount);
+        }
+        liquidity = IZirconPylon(pylon).mintPoolTokens(to, isAnchor);
     }
 
     function addSyncLiquidityETH(

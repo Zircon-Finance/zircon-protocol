@@ -1,5 +1,19 @@
 {
-  "name": "hardhat-project",
+  "name": "zircon-protocol",
+  "version": "1.0.0",
+  "description": "Core Contracts",
+  "engines": {
+    "node": ">=10"
+  },
+  "homepage": "https://zircon.finance",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uniswap/uniswap-v2-periphery"
+  },
+  "files": [
+    "artifacts",
+    "contracts"
+  ],
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -15,7 +29,8 @@
     "@uniswap/lib": "^4.0.1-alpha",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "hardhat-watcher": "^2.1.1"
   },
   "scripts": {
     "deploy": "npx hardhat run --network dev scripts/deploy-script.js",

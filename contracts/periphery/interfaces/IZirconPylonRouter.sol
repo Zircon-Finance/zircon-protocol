@@ -9,7 +9,6 @@ interface IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint amountDesired,
-        uint amountMin,
         bool isAnchor,
         address to,
         uint deadline
