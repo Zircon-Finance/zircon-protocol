@@ -1,10 +1,10 @@
 pragma solidity >=0.6.6;
 
 import "./SafeMath.sol";
-import "../../core/interfaces/IZirconPair.sol";
 import "../../core/interfaces/IZirconPylon.sol";
+import "hardhat/console.sol";
 
-library ZirconPeriphericalLibrary {
+library ZirconPeripheralLibrary {
     using SafeMath for uint256;
     // calculates the CREATE2 address for a pair without making any external calls
     //TODO: Update init code hash with Zircon Pylon code hash
@@ -13,11 +13,12 @@ library ZirconPeriphericalLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(tokenA, tokenB, pair)),
-                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+                hex'db6cbce5651b968fb1098b5f125b6d841c73f5e40c229e75fefd5a3b413b0628' // init code hash
             ))));
     }
 
     function isInitialized(address factory, address tokenA, address tokenB, address pair) view external returns (bool initialized){
+        console.log("123",pylonFor(factory, tokenA, tokenB, pair));
         initialized = IZirconPylon(pylonFor(factory, tokenA, tokenB, pair)).initialized() == 1;
     }
 

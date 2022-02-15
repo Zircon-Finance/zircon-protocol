@@ -25,24 +25,24 @@ async function addLiquidity(token0Amount, token1Amount) {
     await pair.mint(account.address)
 }
 
-beforeEach(async () => {
-    [account, account2] = await ethers.getSigners();
-    deployerAddress = account.address;
-    let fixtures = await coreFixtures(deployerAddress)
-    factoryInstance = fixtures.factoryInstance
-    token0 = fixtures.token0
-    token1 = fixtures.token1
-    poolTokenInstance0 = fixtures.poolTokenInstance0
-    poolTokenInstance1 = fixtures.poolTokenInstance1
-    pair = fixtures.pair
-    pylonInstance = fixtures.pylonInstance
-    factoryPylonInstance = fixtures.factoryPylonInstance
-});
+
 // TODO: Put correct events emitted from Pylon SC
 // TODO: See case where we have a big dump
 // TODO: Extract Liquidity Tests
 describe("Pylon", () => {
-
+    beforeEach(async () => {
+        [account, account2] = await ethers.getSigners();
+        deployerAddress = account.address;
+        let fixtures = await coreFixtures(deployerAddress)
+        factoryInstance = fixtures.factoryInstance
+        token0 = fixtures.token0
+        token1 = fixtures.token1
+        poolTokenInstance0 = fixtures.poolTokenInstance0
+        poolTokenInstance1 = fixtures.poolTokenInstance1
+        pair = fixtures.pair
+        pylonInstance = fixtures.pylonInstance
+        factoryPylonInstance = fixtures.factoryPylonInstance
+    });
     const init = async (token0Amount, token1Amount) => {
         // Let's initialize the Pool, inserting some liquidity in it
         await addLiquidity(token0Amount, token1Amount)

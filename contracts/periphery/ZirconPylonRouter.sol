@@ -5,7 +5,8 @@ import "./interfaces/IZirconPylonRouter.sol";
 import "../core/interfaces/IZirconPair.sol";
 import "../core/interfaces/IZirconPylonFactory.sol";
 import "../core/interfaces/IZirconFactory.sol";
-import "./libraries/ZirconPeriphericalLibrary.sol";
+import "./libraries/ZirconPeripheralLibrary.sol";
+import "./libraries/UniswapV2Library.sol";
 
 contract ZirconPylonRouter is IZirconPylonRouter {
     address public immutable override factory;
@@ -36,18 +37,26 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     ) internal virtual returns (uint amount) {
 
         // checks if pylon contains pair of tokens
-        address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-        require(IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) != address(0), "ZPR: Pylon not created");
+        {
+            address pairt = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+            console.log("p", pairt);
+        }
+
+
+    address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+        console.log("p", pair);
+
+    require(IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) != address(0), "ZPR: Pylon not created");
         // Checking if pylon is initialized
-        require(ZirconPeriphericalLibrary.isInitialized(factory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
+        require(ZirconPeripheralLibrary.isInitialized(pylonFactory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
 
         (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
-        (uint reservePylonA, uint reservePylonB) = ZirconPeriphericalLibrary.getSyncReserves(factory, tokenA, tokenB, pair);
-        address pylonAddress = ZirconPeriphericalLibrary.pylonFor(factory, tokenA, tokenB, pair);
+        (uint reservePylonA, uint reservePylonB) = ZirconPeripheralLibrary.getSyncReserves(factory, tokenA, tokenB, pair);
+        address pylonAddress = ZirconPeripheralLibrary.pylonFor(factory, tokenA, tokenB, pair);
 
         IZirconPair zp = IZirconPair(pair);
         IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
-        uint max = ZirconPeriphericalLibrary.maximumSync(
+        uint max = ZirconPeripheralLibrary.maximumSync(
             isAnchor ? reserveA : reserveB,
             isAnchor ? reservePylonA : reservePylonB,
             pf.maximumPercentageSync(),
@@ -69,7 +78,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     ) virtual override ensure(deadline) external returns (uint amount, uint liquidity) {
         (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        address pylon = ZirconPeriphericalLibrary.pylonFor(factory, tokenA, tokenB, pair);
+        address pylon = ZirconPeripheralLibrary.pylonFor(factory, tokenA, tokenB, pair);
         if (isAnchor) {
             TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amount);
         }else{

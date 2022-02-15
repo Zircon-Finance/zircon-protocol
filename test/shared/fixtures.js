@@ -7,7 +7,7 @@ exports.coreFixtures = async function coreFixtures(address) {
     let factoryInstance = await factory.deploy(address);
 
     let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
-    factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3),
+    let factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3),
         factoryInstance.address);
 
     // Deploy Tokens
@@ -28,17 +28,28 @@ exports.coreFixtures = async function coreFixtures(address) {
     await factoryPylonInstance.addPylon(lpAddress, token0.address, token1.address);
     let pylonAddress = await factoryPylonInstance.getPylon(token0.address, token1.address)
 
-    let zPylon = await ethers.getContractFactory('ZirconPylon')
-    let poolToken1 = await ethers.getContractFactory('ZirconPoolToken')
-    let poolToken2 = await ethers.getContractFactory('ZirconPoolToken')
+    let zPylon = await ethers.getContractFactory('ZirconPylon');
+    let poolToken1 = await ethers.getContractFactory('ZirconPoolToken');
+    let poolToken2 = await ethers.getContractFactory('ZirconPoolToken');
     let pylonInstance = await zPylon.attach(pylonAddress);
 
-
+    
     let poolAddress0 = await pylonInstance.floatPoolToken();
     let poolAddress1 = await pylonInstance.anchorPoolToken();
 
-    let poolTokenInstance0 = poolToken1.attach(poolAddress0)
-    let poolTokenInstance1 = poolToken2.attach(poolAddress1)
+    let poolTokenInstance0 = poolToken1.attach(poolAddress0);
+    let poolTokenInstance1 = poolToken2.attach(poolAddress1);
+
+    //Router
+    let WETH = await ethers.getContractFactory('WETH');
+    const WETHInstance = await WETH.deploy()
+    let peripheralLibrary = await (await ethers.getContractFactory('ZirconPeripheralLibrary')).deploy();
+    let pylonRouterContract = await ethers.getContractFactory('ZirconPylonRouter', {
+        libraries: {
+            ZirconPeripheralLibrary: peripheralLibrary.address,
+        },
+    });
+    let routerInstance = await pylonRouterContract.deploy(factoryInstance.address, factoryPylonInstance.address, WETHInstance.address)
 
     return {
         factoryInstance,
@@ -49,5 +60,6 @@ exports.coreFixtures = async function coreFixtures(address) {
         token0,
         token1,
         pair,
+        routerInstance
     }
 }
