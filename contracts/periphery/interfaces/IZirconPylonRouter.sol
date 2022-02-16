@@ -36,6 +36,7 @@ interface IZirconPylonRouter {
         address token,
         uint amountDesired,
         bool isAnchor,
+        bool shouldMintAnchor,
         address to,
         uint deadline
     ) external payable returns (uint amount, uint liquidity);
@@ -52,6 +53,7 @@ interface IZirconPylonRouter {
         address token,
         uint amountDesired,
         bool isAnchor,
+        bool shouldMintAnchor,
         address to,
         uint deadline
     ) external payable returns (uint liquidity);

@@ -171,6 +171,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address token,
         uint amountDesired,
         bool isAnchor,
+        bool shouldMintAnchor,
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external payable returns (uint amount, uint liquidity) {
@@ -179,13 +180,9 @@ contract ZirconPylonRouter is IZirconPylonRouter {
 
         (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
 
-        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
-        IWETH(WETH).deposit{value: amount}();
-        assert(IWETH(WETH).transfer(pylon, amount));
+        address pylon = _getPylon(tokenA, tokenB);
+        _transfer(amountDesired, shouldMintAnchor ? tokenB : tokenA, pylon);
         // refunds
-        if (msg.value > amount) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
-
         liquidity = IZirconPylon(pylon).mintPoolTokens(to, !isAnchor);
     }
 
@@ -208,27 +205,30 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
     }
 
+    function _transfer(uint amountDesired, address token, address pylon) private {
+        if (token == WETH) {
+            IWETH(WETH).deposit{value: amountDesired}();
+            assert(IWETH(WETH).transfer(pylon, amountDesired));
+        }else{
+            TransferHelper.safeTransferFrom(token, msg.sender, pylon, amountDesired);
+        }
+    }
     // @isAnchor indicates if the token should be the anchor or float
     // This Function mints tokens for WETH in the contrary of @isAnchor
-
     function addAsyncLiquidity100ETH(
         address token,
         uint amountDesired,
         bool isAnchor,
+        bool shouldMintAnchor,
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external payable returns (uint liquidity){
         address tokenA = !isAnchor ? token : WETH;
         address tokenB = !isAnchor ?  WETH : token;
         restricted(tokenA, tokenB);
-        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
-        IWETH(WETH).deposit{value: amountDesired}();
-        assert(IWETH(WETH).transfer(pylon, amountDesired));
-        // refunds
-        //        if (msg.value > amountDesired) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
-
-        liquidity = IZirconPylon(pylon).mintAsync100(to, !isAnchor);
+        address pylon = _getPylon(tokenA, tokenB);
+        _transfer(amountDesired, shouldMintAnchor ? tokenB : tokenA, pylon);
+        liquidity = IZirconPylon(pylon).mintAsync100(to, shouldMintAnchor);
     }
 
     // **** Add Async Liquidity **** //

@@ -140,6 +140,7 @@ describe("Pylon Router", () => {
             token0.address,
             ethers.BigNumber.from('44999999999999929'),
             true,
+            false,
             account.address,
             ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
         //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
@@ -199,6 +200,7 @@ describe("Pylon Router", () => {
             token0.address,
             ethers.BigNumber.from('44999999999999929'),
             true,
+            false,
             account.address,
             ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
         //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
