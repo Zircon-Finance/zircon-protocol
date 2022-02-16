@@ -134,7 +134,7 @@ contract ZirconPylon {
     // On init pylon we have to handle two cases
     // The first case is when we initialize the pair through the pylon
     // And the second one is when initialize the pylon with a pair already existing
-    function initPylon(address _to) external lock{
+    function initPylon(address _to) external lock {
         require(initialized == 0, "Already Initialized");
 
         // Let's get the balances so we can see what the user send us
@@ -245,7 +245,6 @@ contract ZirconPylon {
             if(px != 0) _safeTransfer(_pair.token0, pairAddress, px);
             if(py != 0) _safeTransfer(_pair.token1, pairAddress, py);
             IZirconPair(pairAddress).mint(address(this));
-
             // Removing tokens sent to the pair to balances
             balance0 -= px;
             balance1 -= py;
@@ -322,6 +321,7 @@ contract ZirconPylon {
         uint fee = feeTo == address(0) ? 0 : liquidity.mul(dynamicFeePercentage)/100;
         if (fee != 0) _mintFee(fee, _poolTokenAddress);
         console.log("<<<Pylon:::::::liquidity>>>> ", liquidity/testMultiplier);
+        console.log(_poolTokenAddress);
         pt.mint(_to, fee == 0 ? liquidity : liquidity.sub(fee));
 
         emit MintSync(msg.sender, amountIn);

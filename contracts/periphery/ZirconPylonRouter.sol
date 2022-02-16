@@ -29,6 +29,18 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
+    modifier _addLiquidityChecks(address tokenA, address tokenB) {
+        address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+        require(pair != address(0), "ZPR: Pair Not Created");
+        require(IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) != address(0), "ZPR: Pylon not created");
+        // Checking if pylon is initialized
+        require(ZirconPeripheralLibrary.isInitialized(pylonFactory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
+        _;
+    }
+
+    function restricted(address tokenA, address tokenB) internal _addLiquidityChecks(tokenA, tokenB){}
+
+
     // **** INIT PYLON *****
 
     function _initializePylon(address tokenA, address tokenB) internal virtual returns (address pylon) {
@@ -40,8 +52,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         }
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         console.log("pair for:", pair);
-//        address e = IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB);
-//        console.log("pylon::", e);
+        //        address e = IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB);
+        //        console.log("pylon::", e);
         if (IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) == address(0)) {
             address pylont = IZirconPylonFactory(pylonFactory).addPylon(pair, tokenA, tokenB);
             console.log("pylon", pylont);
@@ -102,35 +114,35 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     }
 
     // **** ADD SYNC LIQUIDITY ****
+    function getMax(uint reserve, uint reservePylon, address pair, address pylonAddress, bool isAnchor) internal returns (uint max) {
+        IZirconPair zp = IZirconPair(pair);
+        IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
+        max = ZirconPeripheralLibrary.maximumSync(
+            reserve,
+            reservePylon,
+            pf.maximumPercentageSync(),
+            isAnchor ? pf.maxAnchor() : pf.maxFloat(),
+            zp.totalSupply(),
+            zp.balanceOf(pylonAddress));
+    }
     function _addSyncLiquidity(
         address tokenA,
         address tokenB,
         uint amountDesired,
         bool isAnchor
-    ) internal virtual returns (uint amount) {
-        // checks if pylon contains pair of tokens
-        address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-
-        require(pair != address(0), "ZPR: Pair Not Created");
-        require(IZirconPylonFactory(pylonFactory).getPylon(tokenA, tokenB) != address(0), "ZPR: Pylon not created");
-        // Checking if pylon is initialized
-        require(ZirconPeripheralLibrary.isInitialized(pylonFactory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
+    ) internal virtual _addLiquidityChecks(tokenA, tokenB) returns (uint amount) {
+        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
 
         (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
-        (uint reservePylonA, uint reservePylonB) = ZirconPeripheralLibrary.getSyncReserves(pylonFactory, tokenA, tokenB, pair);
+        (uint reservePairA, uint reservePairB) = ZirconPeripheralLibrary.getSyncReserves(pylonFactory, tokenA, tokenB, pair);
         address pylonAddress = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
 
-        IZirconPair zp = IZirconPair(pair);
-        IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
-        uint max = ZirconPeripheralLibrary.maximumSync(
-            isAnchor ? reserveA : reserveB,
-            isAnchor ? reservePylonA : reservePylonB,
-            pf.maximumPercentageSync(),
-            isAnchor ? pf.maxAnchor() : pf.maxFloat(),
-            zp.totalSupply(),
-            zp.balanceOf(pylonAddress));
-        console.log(max);
-        require(amountDesired <= max, "ZPRouter: EXCEEDS_MAX_SYNC");
+        require(amountDesired <= getMax(isAnchor ? reserveA: reserveB,
+            isAnchor ? reservePairA: reservePairB,
+            pair,
+            pylonAddress,
+            isAnchor
+        ), "ZPRouter: EXCEEDS_MAX_SYNC");
 
         amount = amountDesired;
     }
@@ -141,7 +153,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline) external returns (uint amount, uint liquidity) {
+    ) virtual override ensure(deadline)  external returns (uint amount, uint liquidity) {
         (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
@@ -153,6 +165,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         liquidity = IZirconPylon(pylon).mintPoolTokens(to, isAnchor);
     }
 
+    // @isAnchor indicates if the token should be the anchor or float
+    // This Function mints tokens for WETH in the contrary of @isAnchor
     function addSyncLiquidityETH(
         address token,
         uint amountDesired,
@@ -160,8 +174,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external payable returns (uint amount, uint liquidity) {
-        address tokenA = isAnchor ? token : WETH;
-        address tokenB = isAnchor ?  WETH : token;
+        address tokenA = !isAnchor ? token : WETH;
+        address tokenB = !isAnchor ?  WETH : token;
 
         (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
 
@@ -172,7 +186,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         // refunds
         if (msg.value > amount) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
 
-        liquidity = IZirconPylon(pylon).mintPoolTokens(to, isAnchor);
+        liquidity = IZirconPylon(pylon).mintPoolTokens(to, !isAnchor);
     }
 
     function addAsyncLiquidity100(
@@ -182,7 +196,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint liquidity){
+    ) virtual override ensure(deadline) _addLiquidityChecks(tokenA, tokenB) external returns (uint liquidity){
+
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
         if (isAnchor) {
@@ -193,6 +208,9 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
     }
 
+    // @isAnchor indicates if the token should be the anchor or float
+    // This Function mints tokens for WETH in the contrary of @isAnchor
+
     function addAsyncLiquidity100ETH(
         address token,
         uint amountDesired,
@@ -200,40 +218,111 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external payable returns (uint liquidity){
-        address tokenA = isAnchor ? token : WETH;
-        address tokenB = isAnchor ?  WETH : token;
-
+        address tokenA = !isAnchor ? token : WETH;
+        address tokenB = !isAnchor ?  WETH : token;
+        restricted(tokenA, tokenB);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
         IWETH(WETH).deposit{value: amountDesired}();
         assert(IWETH(WETH).transfer(pylon, amountDesired));
         // refunds
-//        if (msg.value > amountDesired) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
+        //        if (msg.value > amountDesired) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
 
-        liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
+        liquidity = IZirconPylon(pylon).mintAsync100(to, !isAnchor);
+    }
+
+    // **** Add Async Liquidity **** //
+
+    function _addAsyncLiquidity(
+        address tokenA,
+        address tokenB,
+        uint amountADesired,
+        uint amountBDesired,
+        uint amountAMin,
+        uint amountBMin
+    ) internal virtual _addLiquidityChecks(tokenA, tokenB) returns (uint amountA, uint amountB) {
+        // create the pair if it doesn't exist yet
+
+        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
+        if (reserveA == 0 && reserveB == 0) {
+            (amountA, amountB) = (amountADesired, amountBDesired);
+        } else {
+            uint amountBOptimal = UniswapV2Library.quote(amountADesired, reserveA, reserveB);
+            if (amountBOptimal <= amountBDesired) {
+                console.log("B Optimal", amountBOptimal);
+                require(amountBOptimal >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
+                (amountA, amountB) = (amountADesired, amountBOptimal);
+            } else {
+                uint amountAOptimal = UniswapV2Library.quote(amountBDesired, reserveB, reserveA);
+                console.log("B Optimal", amountAOptimal);
+                assert(amountAOptimal <= amountADesired);
+                require(amountAOptimal >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
+                (amountA, amountB) = (amountAOptimal, amountBDesired);
+            }
+        }
+    }
+
+
+    function _transferAsync(address tokenA, address tokenB, uint amountA, uint amountB) internal returns (address pylon){
+        pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, UniswapV2Library.pairFor(factory, tokenA, tokenB));
+        TransferHelper.safeTransferFrom(tokenA, msg.sender, pylon, amountA);
+        TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amountB);
     }
 
     function addAsyncLiquidity(
         address tokenA,
         address tokenB,
-        uint amountDesired,
+        uint amountADesired,
+        uint amountBDesired,
         uint amountAMin,
         uint amountBMin,
         bool isAnchor,
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB, uint liquidity){
-
+        (amountA, amountB) = _addAsyncLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+        address pylon = _transferAsync(tokenA, tokenB, amountA, amountB);
+        liquidity = IZirconPylon(pylon).mintAsync(to, isAnchor);
     }
+
+    function _getAmounts(uint amountDesiredToken, uint amountDesiredETH, uint amountTokenMin, uint amountETHMin, bool isAnchor, address tokenA, address tokenB) internal returns (uint amountA, uint amountB){
+        uint atA =  !isAnchor ? amountDesiredToken : amountDesiredETH;
+        uint atB = !isAnchor ?  amountDesiredETH : amountDesiredToken;
+        uint aminA = !isAnchor ? amountTokenMin : amountETHMin;
+        uint aminB = !isAnchor ?  amountETHMin : amountTokenMin;
+        (amountA, amountB) = _addAsyncLiquidity(tokenA, tokenB, atA, atB, aminA, aminB);
+    }
+
+    function _getPylon(address tokenA, address tokenB) internal returns (address pylon){
+        pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, UniswapV2Library.pairFor(factory, tokenA, tokenB));
+    }
+
     function addAsyncLiquidityETH(
         address token,
-        uint amountDesired,
+        uint amountDesiredToken,
+        uint amountDesiredETH,
         uint amountTokenMin,
         uint amountETHMin,
         bool isAnchor,
+        bool shouldReceiveAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external payable returns (uint amountToken, uint amountETH, uint liquidity){
+    ) virtual override ensure(deadline)  external payable returns (uint amountA, uint amountB, uint liquidity){
+
+        address tokenA = !isAnchor ? token : WETH;
+        address tokenB = !isAnchor ?  WETH : token;
+        (amountA, amountB) = _getAmounts(amountDesiredToken, amountDesiredETH, amountTokenMin, amountETHMin, isAnchor, tokenA, tokenB);
+
+        {
+            address pylon = _getPylon(tokenA, tokenB);
+            TransferHelper.safeTransferFrom(isAnchor ? tokenB : tokenA, msg.sender, pylon, isAnchor ? amountB : amountA);
+            IWETH(WETH).deposit{value: isAnchor ? amountA : amountB}();
+            assert(IWETH(WETH).transfer(pylon, isAnchor ? amountA : amountB));
+            liquidity = IZirconPylon(pylon).mintAsync(to, shouldReceiveAnchor);
+        }
+
+        // refund dust eth, if any
+        if (msg.value > (isAnchor ? amountA : amountB)) TransferHelper.safeTransferETH(msg.sender, msg.value - (isAnchor ? amountA : amountB));
 
     }
 
