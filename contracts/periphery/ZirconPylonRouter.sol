@@ -59,10 +59,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint amountA, uint amountB){
-        console.log("init...");
-
         address pylon = _initializePylon(tokenA, tokenB);
-        console.log("Pylon initialized");
         amountA = amountDesiredA;
         amountB = amountDesiredB;
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
@@ -85,7 +82,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address pylon = _initializePylon(tokenA, tokenB);
 
         amountA =  !isAnchor ? amountDesiredToken : amountDesiredETH;
-        amountB = !isAnchor ?  amountDesiredETH : amountDesiredToken ;
+        amountB = !isAnchor ?  amountDesiredETH : amountDesiredToken;
 
         if (isAnchor) {
             TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amountB);
@@ -120,8 +117,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         require(ZirconPeripheralLibrary.isInitialized(pylonFactory, tokenA, tokenB, pair), "ZPR: Pylon Not Initialized");
 
         (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
-        (uint reservePylonA, uint reservePylonB) = ZirconPeripheralLibrary.getSyncReserves(factory, tokenA, tokenB, pair);
-        address pylonAddress = ZirconPeripheralLibrary.pylonFor(factory, tokenA, tokenB, pair);
+        (uint reservePylonA, uint reservePylonB) = ZirconPeripheralLibrary.getSyncReserves(pylonFactory, tokenA, tokenB, pair);
+        address pylonAddress = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
 
         IZirconPair zp = IZirconPair(pair);
         IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
@@ -132,7 +129,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
             isAnchor ? pf.maxAnchor() : pf.maxFloat(),
             zp.totalSupply(),
             zp.balanceOf(pylonAddress));
-
+        console.log(max);
         require(amountDesired <= max, "ZPRouter: EXCEEDS_MAX_SYNC");
 
         amount = amountDesired;
@@ -145,9 +142,9 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) virtual override ensure(deadline) external returns (uint amount, uint liquidity) {
-    (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
+        (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        address pylon = ZirconPeripheralLibrary.pylonFor(factory, tokenA, tokenB, pair);
+        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
         if (isAnchor) {
             TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amount);
         }else{
@@ -159,14 +156,25 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     function addSyncLiquidityETH(
         address token,
         uint amountDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external payable returns (uint amountToken, uint amountETH, uint liquidity) {
+    ) virtual override ensure(deadline)  external payable returns (uint amount, uint liquidity) {
+        address tokenA = isAnchor ? token : WETH;
+        address tokenB = isAnchor ?  WETH : token;
 
+        (amount) = _addSyncLiquidity(tokenA, tokenB, amountDesired, isAnchor);
+
+        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
+        IWETH(WETH).deposit{value: amount}();
+        assert(IWETH(WETH).transfer(pylon, amount));
+        // refunds
+        if (msg.value > amount) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
+
+        liquidity = IZirconPylon(pylon).mintPoolTokens(to, isAnchor);
     }
+
     function addAsyncLiquidity100(
         address tokenA,
         address tokenB,
