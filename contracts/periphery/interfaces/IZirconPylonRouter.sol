@@ -43,21 +43,18 @@ interface IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint amountDesired,
-        uint amountMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
+    ) external returns (uint liquidity);
 
     function addAsyncLiquidity100ETH(
         address token,
         uint amountDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+    ) external payable returns (uint liquidity);
 
     function addAsyncLiquidity(
         address tokenA,

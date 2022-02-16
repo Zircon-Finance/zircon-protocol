@@ -179,24 +179,38 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint amountDesired,
-        uint amountMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB, uint liquidity){
-
+    ) virtual override ensure(deadline)  external returns (uint liquidity){
+        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
+        if (isAnchor) {
+            TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amountDesired);
+        }else{
+            TransferHelper.safeTransferFrom(tokenA, msg.sender, pylon, amountDesired);
+        }
+        liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
     }
 
     function addAsyncLiquidity100ETH(
         address token,
         uint amountDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external payable returns (uint amountToken, uint amountETH, uint liquidity){
+    ) virtual override ensure(deadline)  external payable returns (uint liquidity){
+        address tokenA = isAnchor ? token : WETH;
+        address tokenB = isAnchor ?  WETH : token;
 
+        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+        address pylon = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
+        IWETH(WETH).deposit{value: amountDesired}();
+        assert(IWETH(WETH).transfer(pylon, amountDesired));
+        // refunds
+//        if (msg.value > amountDesired) TransferHelper.safeTransferETH(msg.sender, msg.value - amount);
+
+        liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
     }
 
     function addAsyncLiquidity(
