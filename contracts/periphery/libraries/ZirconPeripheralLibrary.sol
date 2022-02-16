@@ -13,12 +13,11 @@ library ZirconPeripheralLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(tokenA, tokenB, pair)),
-                hex'db6cbce5651b968fb1098b5f125b6d841c73f5e40c229e75fefd5a3b413b0628' // init code hash
+                hex'af0e829c3ac826bd2021f675cc4abca7ff8f11fcb311535f72591f0023d883e8' // init code hash
             ))));
     }
 
     function isInitialized(address factory, address tokenA, address tokenB, address pair) view external returns (bool initialized){
-        console.log("123",pylonFor(factory, tokenA, tokenB, pair));
         initialized = IZirconPylon(pylonFor(factory, tokenA, tokenB, pair)).initialized() == 1;
     }
 

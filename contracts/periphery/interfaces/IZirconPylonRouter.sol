@@ -5,6 +5,24 @@ interface IZirconPylonRouter {
     function WETH() external pure returns (address);
     function pylonFactory() external pure returns (address);
 
+    function init(
+        address tokenA,
+        address tokenB,
+        uint amountDesiredA,
+        uint amountDesiredB,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
+
+    function initETH(
+        address token,
+        uint amountDesiredToken,
+        uint amountDesiredETH,
+        bool isAnchor,
+        address to,
+        uint deadline
+    ) external payable returns (uint amountA, uint amountB);
+
     function addSyncLiquidity(
         address tokenA,
         address tokenB,

@@ -1,6 +1,9 @@
 pragma solidity >=0.5.16;
 interface IZirconPylon {
+
     function initialized() external view returns (uint);
+    function anchorPoolToken() external view returns (address);
+    function floatPoolToken() external view returns (address);
     function getSyncReserves() external view returns  (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
     // Called once by the factory at time of deployment
     // @_floatPoolToken -> Contains Address Of Float PT
