@@ -409,37 +409,89 @@ contract ZirconPylonRouter is IZirconPylonRouter {
             amountToken = !isAnchor ? amountA : amountB;
             amountETH = !isAnchor ?  amountB : amountA;
         }
-
-
-
         TransferHelper.safeTransfer(token, to, amountToken);
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH);
-
-
     }
 
-    function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline,
-        bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB){
+    //    function removeLiquiditySyncWithPermit(
+    //        address tokenA,
+    //        address tokenB,
+    //        uint liquidity,
+    //        uint amountMin,
+    //        bool isAnchor,
+    //        address to,
+    //        uint deadline,
+    //        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    //    ) virtual override ensure(deadline)  external returns (uint amount){
+    //        address pylon = _getPylon(tokenA, tokenB);
+    //        uint value = approveMax ? uint(-1) : liquidity;
+    //        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).permit(msg.sender, address(this), value, deadline, v, r, s);
+    //        (amount) = removeLiquiditySync(tokenA, tokenB, liquidity, amountMin, isAnchor, to, deadline);
+    //    }
+    //
+    //    function removeLiquidityETHWithPermit(
+    //        address token,
+    //        uint liquidity,
+    //        uint amountMin,
+    //        bool isAnchor,
+    //        bool shouldRemoveAnchor,
+    //        address to,
+    //        uint deadline,
+    //        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    //    ) virtual override ensure(deadline) external returns (uint amount){
+    //        address pylon = UniswapV2Library.pairFor(factory, token, WETH);
+    //        uint value = approveMax ? uint(-1) : liquidity;
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        .permit(msg.sender, address(this), value, deadline, v, r, s);
+    //        (amount) = removeLiquiditySyncETH(
+    //            token,
+    //            liquidity,
+    //            amountMin,
+    //            isAnchor,
+    //            shouldRemoveAnchor,
+    //            to,
+    //            deadline);
+    //    }
+    //
+    //    function removeLiquidityAsyncWithPermit(
+    //        address token,
+    //        uint liquidity,
+    //        uint amountTokenMin,
+    //        uint amountETHMin,
+    //        bool isAnchor,
+    //        bool shouldBurnAnchor,
+    //        address to,
+    //        uint deadline,
+    //        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    //    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB){
+    //        address tokenA = !isAnchor ? token : WETH;
+    //        address tokenB = !isAnchor ?  WETH : token;
+    //
+    //        address pylon = _getPylon(tokenA, tokenB);
+    //        uint value = approveMax ? uint(-1) : liquidity;
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        .permit(msg.sender, address(this), value, deadline, v, r, s);
+    //        (amountA, amountB) = removeLiquidityAsyncETH(token, liquidity, amountAMin, amountBMin, isAnchor, to, deadline);
+    //
+    //    }
 
-    }
-    function removeLiquidityETHWithPermit(
-        address token,
-        uint liquidity,
-        uint amountTokenMin,
-        uint amountETHMin,
-        address to,
-        uint deadline,
-        bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) virtual override ensure(deadline) external returns (uint amountToken, uint amountETH){
-
-    }
+    //    function removeLiquidityAsyncETHWithPermit(
+    //        address token,
+    //        uint liquidity,
+    //        uint amountTokenMin,
+    //        uint amountETHMin,
+    //    bool isAnchor,
+    //        bool shouldBurnAnchor,
+    //        address to,
+    //        uint deadline,
+    //        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    //    ) virtual override ensure(deadline) external returns (uint amountA, uint amountB){
+    //        address pylon = _getPylon(tokenA, tokenB);
+    //        uint value = approveMax ? uint(-1) : liquidity;
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        .permit(msg.sender, address(this), value, deadline, v, r, s);
+    //        (amountA, amountB) = removeLiquidityAsync(token, liquidity, amountTokenMin, amountETHMin, isAnchor, shouldBurnAnchor, to, deadline);
+    //
+    //    }
 }
