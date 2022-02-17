@@ -384,9 +384,108 @@ describe("Pylon Router", () => {
         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022999999999999950'))
         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('0'))
         expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('50000000000000000'))
-        expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('1031752973129884647'))
+        expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('686331310520256337'))
 
-        expect(await waffle.provider.getBalance(account2.address)).to.eq(ethers.BigNumber.from('10000910297245995400141'))
+        expect(await waffle.provider.getBalance(account2.address)).to.eq(ethers.BigNumber.from('10001527596822326380650'))
+    });
+
+    it('should remove liquidity', async function () {
+        await token0.approve(router.address, ethers.constants.MaxUint256)
+        await token1.approve(router.address, ethers.constants.MaxUint256)
+        await poolTokenInstance1.approve(router.address, ethers.constants.MaxUint256)
+        await router.init(
+            token0.address,
+            token1.address,
+            expandTo18Decimals(1),
+            expandTo18Decimals(2),
+            account.address,
+            ethers.constants.MaxUint256)
+        await router.addAsyncLiquidity(
+            token0.address,
+            token1.address,
+            ethers.BigNumber.from('44999999999999929'),
+            ethers.BigNumber.from('22999999999999929'),
+            ethers.BigNumber.from('11499999999999964'),
+            ethers.BigNumber.from('20999999999999929'),
+            true,
+            account.address,
+            ethers.constants.MaxUint256);
+        let balance = await poolTokenInstance1.balanceOf(account.address)
+
+        await router.removeLiquidityAsync(
+            token0.address,
+            token1.address,
+            balance,
+            ethers.BigNumber.from('1000000000000000'),
+            ethers.BigNumber.from('1000000000000000'),
+            true,
+            account2.address,
+            ethers.constants.MaxUint256);
+
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from('999999999999999020'))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from('499999999999999509'))
+    });
+    it('should remove sync liquidity ETH', async function () {
+        await token0.approve(router.address, ethers.constants.MaxUint256)
+        await token1.approve(router.address, ethers.constants.MaxUint256)
+        await router.initETH(
+            token0.address,
+            expandTo18Decimals(1),
+            expandTo18Decimals(2),
+            true,
+            account.address,
+            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)})
+
+        await router.addAsyncLiquidityETH(
+            token0.address,
+            ethers.BigNumber.from('44999999999999929'),
+            ethers.BigNumber.from('22999999999999929'),
+            ethers.BigNumber.from('11499999999999964'),
+            ethers.BigNumber.from('20999999999999929'),
+            true,
+            true,
+            account.address,
+            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
+
+        let pairAddress = await factoryInstance.getPair(WETH.address, token0.address);
+        let pair = await ethers.getContractFactory('ZirconPair');
+        let newPair = pair.attach(pairAddress);
+
+        let pylonAddress = await factoryPylonInstance.getPylon(WETH.address, token0.address);
+        let zPylon = await ethers.getContractFactory('ZirconPylon');
+        let pylon = zPylon.attach(pylonAddress);
+        let poolToken1 = await ethers.getContractFactory('ZirconPoolToken');
+        let poolToken2 = await ethers.getContractFactory('ZirconPoolToken');
+        let poolAddress0 = await pylon.floatPoolToken();
+        let poolAddress1 = await pylon.anchorPoolToken();
+
+        let ptInstance0 = poolToken1.attach(poolAddress0);
+        let ptInstance1 = poolToken2.attach(poolAddress1);
+
+        await ptInstance1.approve(router.address, ethers.constants.MaxUint256)
+        await ptInstance0.approve(router.address, ethers.constants.MaxUint256)
+
+        let balance = await ptInstance0.balanceOf(account.address)
+        // expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2000000000000000000'))
+
+        expect(await waffle.provider.getBalance(account2.address)).to.eq(ethers.BigNumber.from('10001527596822326380650'))
+        await router.removeLiquidityAsyncETH(
+            token0.address,
+            balance,
+            ethers.BigNumber.from('910297245995400141'),
+            ethers.BigNumber.from('100'),
+            true,
+            false,
+            account2.address,
+            ethers.constants.MaxUint256);
+
+        // Let''s check that everything was correctly minted....
+        expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022999999999999950'))
+        expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('0'))
+        expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('50000000000000000'))
+        expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('652659559035182669'))
+
+        expect(await waffle.provider.getBalance(account2.address)).to.eq(ethers.BigNumber.from('10002527596822326380148'))
     });
 
 })

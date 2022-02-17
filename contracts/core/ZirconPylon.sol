@@ -532,7 +532,7 @@ contract ZirconPylon {
 
     // Burn Async send both tokens 50-50
     // Liquidity has to be sent before
-    function burnAsync(address _to, bool _isAnchor) external lock {
+    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
         sync();
 
         IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
@@ -543,9 +543,11 @@ contract ZirconPylon {
         console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
 
         _safeTransfer(pairAddress, pairAddress, ptu);
-        (uint amount0, uint amount1) = IZirconPair(pairAddress).burn(_to);
-        virtualAnchorBalance -= (isFloatReserve0 ? amount1 : amount0);
-        virtualFloatBalance -= (isFloatReserve0 ? amount0 : amount1);
+        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
+        amount0 = isFloatReserve0 ? amountA : amountB;
+        amount1 = isFloatReserve0 ? amountB : amountA;
+        virtualAnchorBalance -= amount0;
+        virtualFloatBalance -= amount1;
         emit BurnAsync(msg.sender, amount0, amount1);
 
     }

@@ -356,7 +356,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenB = !isAnchor ?  WETH : token;
         (amount) = removeLiquiditySync(
             tokenA,
-                tokenB,
+            tokenB,
             liquidity,
             amountMin,
             shouldRemoveAnchor,
@@ -372,23 +372,53 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint liquidity,
-        uint amountMin,
+        uint amountAMin,
+        uint amountBMin,
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB){
+    ) virtual override ensure(deadline)  public returns (uint amountA, uint amountB){
+        address pylon = _getPylon(tokenA, tokenB);
+        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
+        (amountA, amountB) = IZirconPylon(pylon).burnAsync(to, isAnchor);
+        require(amountA >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
+        require(amountB >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
 
     }
     function removeLiquidityAsyncETH(
         address token,
         uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
+        uint amountTokenMin,
+        uint amountETHMin,
+        bool isAnchor,
+        bool shouldBurnAnchor,
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external returns (uint amountToken, uint amountETH){
+        {
+            (uint amountA, uint amountB) = removeLiquidityAsync(
+                !isAnchor ? token : WETH,
+                !isAnchor ?  WETH : token,
+                liquidity,
+                amountTokenMin,
+                amountETHMin,
+                shouldBurnAnchor,
+                address(this),
+                deadline
+            );
+            amountToken = !isAnchor ? amountA : amountB;
+            amountETH = !isAnchor ?  amountB : amountA;
+        }
+
+
+
+        TransferHelper.safeTransfer(token, to, amountToken);
+        IWETH(WETH).withdraw(amountETH);
+        TransferHelper.safeTransferETH(to, amountETH);
+
 
     }
+
     function removeLiquidityWithPermit(
         address tokenA,
         address tokenB,

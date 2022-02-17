@@ -104,7 +104,8 @@ interface IZirconPylonRouter {
         address tokenA,
         address tokenB,
         uint liquidity,
-        uint amountMin,
+        uint amountAMin,
+        uint amountBMin,
         bool isAnchor,
         address to,
         uint deadline
@@ -112,8 +113,10 @@ interface IZirconPylonRouter {
     function removeLiquidityAsyncETH(
         address token,
         uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
+        uint amountTokenMin,
+        uint amountETHMin,
+        bool isAnchor,
+        bool shouldBurnAnchor,
         address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH);

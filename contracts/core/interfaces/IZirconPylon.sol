@@ -22,7 +22,7 @@ interface IZirconPylon {
     function mintAsync(address to, bool shouldMintAnchor) external returns (uint liquidity);
     // Burn Async send both tokens 50-50
     // Liquidity has to be sent before
-    function burnAsync(address _to, bool _isAnchor) external;
+    function burnAsync(address _to, bool _isAnchor) external returns (uint amount0, uint amount1);
     // Burn send liquidity back to user burning Pool tokens
     // The function first uses the reserves of the Pylon
     // If not enough reserves it burns The Pool Tokens of the pylon
