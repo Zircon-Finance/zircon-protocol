@@ -12,4 +12,5 @@ interface IZirconPoolToken {
     function mint(address account, uint256 amount) external;
     function burn(address account, uint256 amount) external;
     function initialize(address _token0, address _pair, address _pylon, bool _isAnchor) external;
+    function transferFrom(address from, address to, uint value) external returns (bool);
 }

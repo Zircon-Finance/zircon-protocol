@@ -5,6 +5,7 @@ import "./interfaces/IZirconPylonRouter.sol";
 import "../core/interfaces/IZirconPair.sol";
 import "../core/interfaces/IZirconPylonFactory.sol";
 import "../core/interfaces/IZirconFactory.sol";
+import "../core/interfaces/IZirconPoolToken.sol";
 import "./libraries/ZirconPeripheralLibrary.sol";
 import "./libraries/UniswapV2Library.sol";
 import "hardhat/console.sol";
@@ -334,17 +335,38 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         bool isAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amountA, uint amountB){
-
+    ) virtual override ensure(deadline)  public returns (uint amount){
+        address pylon = _getPylon(tokenA, tokenB);
+        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
+        (amount) = IZirconPylon(pylon).burn(to, isAnchor);
+        console.log("withdrawing amount", amount);
+        require(amount >= amountMin, 'UniswapV2Router: INSUFFICIENT_AMOUNT');
     }
+
     function removeLiquiditySyncETH(
         address token,
         uint liquidity,
         uint amountMin,
+        bool isAnchor,
+        bool shouldRemoveAnchor,
         address to,
         uint deadline
-    ) virtual override ensure(deadline)  external returns (uint amountToken, uint amountETH){
-
+    ) virtual override ensure(deadline)  external returns (uint amount){
+        address tokenA = !isAnchor ? token : WETH;
+        address tokenB = !isAnchor ?  WETH : token;
+        (amount) = removeLiquiditySync(
+            tokenA,
+                tokenB,
+            liquidity,
+            amountMin,
+            shouldRemoveAnchor,
+            (isAnchor && shouldRemoveAnchor) || (!shouldRemoveAnchor && !isAnchor) ? to : address(this),
+            deadline
+        );
+        if ((isAnchor && !shouldRemoveAnchor) || (shouldRemoveAnchor && !isAnchor)) {
+            IWETH(WETH).withdraw(amount);
+            TransferHelper.safeTransferETH(to, amount);
+        }
     }
     function removeLiquidityAsync(
         address tokenA,

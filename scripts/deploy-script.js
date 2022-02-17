@@ -45,42 +45,23 @@ async function deploy() {
     const tok2Instance = await tok2.deploy('Token2', 'TOK2');
 
     console.log(`Token2 deployed to : ${tok2Instance.address}`);
-    /*
-    //Approve router on tokens
-    console.log(`Approving Router on Token1`);
-    await tok1Instance.approve(
-       routerInstance.address,
-       '1000000000000000000000000'
-    );
-    console.log(`Approving Router on Token2`);
-    await tok2Instance.approve(
-       routerInstance.address,
-       '1000000000000000000000000'
-    );
 
-    //Create Pair with Factory and Get Address
-    await factoryInstance.createPair(tok1Instance.address, tok2Instance.address);
-    const lpAddress = await factoryInstance.getPair(
-       tok1Instance.address,
-       tok2Instance.address
-    );
-    console.log(`Liquidity pool at address: ${lpAddress}`);
+    // Deploy Pylon Factory
 
-    //Get Block TimeStamp
-    const blockTime = (await ethers.provider.getBlock()).timestamp;
+    const pylonFactory = await ethers.getContractFactory('ZirconPylonFactory');
+    let factoryPylonInstance = await pylonFactory.deploy(ethers.BigNumber.from("10000000000000000000"), ethers.BigNumber.from("8000000000000000000"),
+        factoryInstance.address);
+    console.log(`Pylon Factory deployed to : ${factoryPylonInstance.address}`);
 
-    //Add Liquidity
-    console.log(`Adding Liquidity...`);
-    await routerInstance.addLiquidity(
-       tok1Instance.address,
-       tok2Instance.address,
-       '1000000000000000000000',
-       '1000000000000000000000',
-       '100000000000000000000',
-       '100000000000000000000',
-       deployerAddress,
-       blockTime + 100
-    );*/
+    // Deploy Pylon Router
+    let peripheralLibrary = await (await ethers.getContractFactory('ZirconPeripheralLibrary')).deploy();
+    let pylonRouterContract = await ethers.getContractFactory('ZirconPylonRouter', {
+        libraries: {
+            ZirconPeripheralLibrary: peripheralLibrary.address,
+        },
+    });
+    console.log(`Pylon Router deployed to : ${pylonRouterContract.address}`);
+
 }
 
 deploy()
