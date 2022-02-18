@@ -42,15 +42,13 @@ contract ZirconPylonFactory {
         }
     }
 
-    function createPylon(address _fptA, address _fptB, address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
+    function createPylon( address _tokenA, address _tokenB, address _pair) private returns (address pylon) {
         // Creating Token
         bytes memory bytecode = type(ZirconPylon).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_tokenA, _tokenB, _pair));
         assembly {
             pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ZirconPylon(pylon).initialize(_fptA, _fptB, _tokenA, _tokenB, _pair, factory);
-        emit PylonCreated(_tokenA, _tokenB, pylon);
     }
 
 
@@ -60,9 +58,12 @@ contract ZirconPylonFactory {
         require(_tokenA != _tokenB, 'ZF: IDENTICAL_ADDRESSES');
         require(getPylon[_tokenA][_tokenB] == address(0), 'ZF: PYLON_EXISTS');
 
+        pylonAddress = createPylon(_tokenA, _tokenB, _pairAddress);
         address poolTokenA = createTokenAddress(_tokenA); // Float
         address poolTokenB = createTokenAddress(_tokenB); // Anchor
-        pylonAddress = createPylon(poolTokenA, poolTokenB, _tokenA, _tokenB, _pairAddress);
+
+        ZirconPylon(pylonAddress).initialize(poolTokenA, poolTokenB, _tokenA, _tokenB, _pairAddress, factory);
+        emit PylonCreated(_tokenA, _tokenB, pylonAddress);
 
         ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, true);
         emit PoolTokenCreated(_tokenA, poolTokenA);

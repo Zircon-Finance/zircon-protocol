@@ -295,6 +295,9 @@ describe("Pylon", () => {
 
         expect(await token0.balanceOf(pair.address)).to.eq(ethers.BigNumber.from('346363636363636399'))
         expect(await token1.balanceOf(pair.address)).to.eq(ethers.BigNumber.from('692727272727272799'))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('363636363636363636'))
+        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1026763990267639929'))
+        expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from('489832152058316516'))
 
         let atb = await poolTokenInstance1.balanceOf(account.address);
         await poolTokenInstance1.transfer(pylonInstance.address, atb);
@@ -314,7 +317,7 @@ describe("Pylon", () => {
         await token0.transfer(newPylonInstance.address, expandTo18Decimals(17))
         await token1.transfer(newPylonInstance.address, expandTo18Decimals(  53))
         //Let's initialize the Pylon, this should call two sync
-        await newPylonInstance.initPylon(account.address)
+        await newPylonInstance.initPylon(account.address, overrides)
         // TODO: make sonme checks here, think if there is some way of concurrency between pylons
     });
 
