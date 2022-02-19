@@ -391,14 +391,14 @@ contract ZirconPylon {
             uint balance = IERC20Uniswap(pair.token0).balanceOf(address(this));
             amountIn = balance.sub(_reserve0);
         }
+        require(amountIn > 0, "ZP: INSUFFICIENT_AMOUNT");
         _safeTransfer(isAnchor ? pair.token1 : pair.token0, pairAddress, amountIn);
         bool shouldTakeReserve0 = isFloatReserve0 ? !isAnchor : isAnchor;
         (, uint amount0, uint amount1) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
         uint amounOut0 = isFloatReserve0 ? amount0 : amount1;
         uint amounOut1 = isFloatReserve0 ? amount1 : amount0;
 
-        virtualAnchorBalance += amounOut0;
-        virtualFloatBalance += amounOut1;
+
 
         liquidity = getLiquidityFromPoolTokens(amounOut0, amounOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
         IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
@@ -416,12 +416,13 @@ contract ZirconPylon {
             uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
             liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve1, _reserve1, gammaMulDecimals, virtualAnchorBalance);
-
+            virtualAnchorBalance += amountInAdjusted;
             //liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
         }else{
             uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
             liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve0, _reserve0, gammaMulDecimals, virtualAnchorBalance);
+            virtualFloatBalance += amountInAdjusted;
 
             // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
             //liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
@@ -458,6 +459,8 @@ contract ZirconPylon {
             _safeTransfer(_token1, pairAddress, amountIn1);
             _pairZircon.mint(address(this));
         }
+
+
         //        uint deltaSupply = pair.totalSupply().sub(_totalSupply);
         // TODO: maybe another formula is faster
         // TODO: check maximum to mint
