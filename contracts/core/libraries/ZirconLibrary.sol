@@ -4,6 +4,7 @@ import "./SafeMath.sol";
 
 library ZirconLibrary {
     using SafeMath for uint256;
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     // Same Function as Uniswap Library, used here for incompatible solidity versions
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
@@ -37,12 +38,14 @@ library ZirconLibrary {
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
     function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) pure internal returns (uint liquidity){
         if (_isAnchor) {
-            liquidity = ((_amount.mul(_totalSupply == 0 ? 1e18 : _totalSupply))/_vab);
+            // TODO: Check the MINIMUM LIQUIDITY SUBSTRACTION
+            liquidity = ((_amount.mul(_totalSupply == 0 ? 1e18 : _totalSupply))/_vab).sub(_totalSupply == 0 ? MINIMUM_LIQUIDITY : 0);
         }else {
+            // TODO: Check the MINIMUM LIQUIDITY SUBSTRACTION
             uint numerator = _totalSupply == 0 ? _amount.mul(1e18) : _amount.mul(_totalSupply);
             uint resTranslated = _reserve0.mul(_gamma).mul(2)/1e18;
             uint denominator = _reserve0 == 0 ? _gamma.mul(2) : (_reservePylon0.add(resTranslated));
-            liquidity = numerator/denominator;
+            liquidity = (numerator/denominator).sub(_totalSupply == 0 ? MINIMUM_LIQUIDITY : 0);
         }
     }
 

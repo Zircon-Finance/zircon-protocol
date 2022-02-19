@@ -60,7 +60,9 @@ async function deploy() {
             ZirconPeripheralLibrary: peripheralLibrary.address,
         },
     });
-    console.log(`Pylon Router deployed to : ${pylonRouterContract.address}`);
+    let pRouterInstance = await pylonRouterContract.deploy(factoryInstance.address, factoryPylonInstance.address, wethInstance.address)
+
+    console.log(`Pylon Router deployed to : ${pRouterInstance.address}`);
 
 }
 

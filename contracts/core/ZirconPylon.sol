@@ -369,6 +369,22 @@ contract ZirconPylon {
         emit MintAsync100(msg.sender, amountIn);
     }
 
+    function getLiquidityFromPoolTokens() private returns (uint liquidity){
+        if (shouldMintAnchor) {
+            uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
+            console.log(">>amountInAdjusted>>", amountInAdjusted);
+
+            liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
+        }else{
+            uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
+            console.log(">>amountInAdjusted>>", amountInAdjusted);
+
+            // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
+            liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
+            // Todo: Change toTransfer (probably remove?)
+        }
+    }
+
     //TODO: Transfer first then calculate on basis of pool token share how many share we should give to the user
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         sync();
@@ -404,19 +420,7 @@ contract ZirconPylon {
         // TODO: check maximum to mint
         console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
 
-        if (shouldMintAnchor) {
-            uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
-            console.log(">>amountInAdjusted>>", amountInAdjusted);
-
-        liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
-        }else{
-            uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
-            console.log(">>amountInAdjusted>>", amountInAdjusted);
-
-            // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
-            liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
-            // Todo: Change toTransfer (probably remove?)
-        }
+        liquidity = getLiquidityFromPoolTokens();
 
         console.log(">>MintAsync>>", liquidity);
         {
