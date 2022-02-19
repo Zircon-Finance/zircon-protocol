@@ -401,6 +401,8 @@ contract ZirconPylon {
 
 
         liquidity = getLiquidityFromPoolTokens(amounOut0, amounOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
+        console.log("<<<_mintAsync100: liquidity minted: ", liquidity/testMultiplier);
+
         IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
         //TODO: This only updates k and pt supply, doesn't re-sync
         _updateVariables();
@@ -424,7 +426,6 @@ contract ZirconPylon {
             liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve0, _reserve0, gammaMulDecimals, virtualAnchorBalance);
             virtualFloatBalance += amountInAdjusted;
 
-            // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
             //liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
             // Todo: Change toTransfer (probably remove?)
         }
@@ -492,6 +493,7 @@ contract ZirconPylon {
         // Adds fees to virtualFloat and virtualAnchor
         // And then calculates Gamma so that the proportions are correct according to the formula
         (uint112 pairReserve0, uint112 pairReserve1) = getPairReservesNormalized();
+        (uint112 pylonReserve0, uint112 pylonReserve1,) = getSyncReserves();
         // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
         uint currentK = uint(pairReserve0).mul(pairReserve1);
@@ -543,7 +545,7 @@ contract ZirconPylon {
                 console.log("<<<sync(): TPVFloatPrime: ", totalPoolValueFloatPrime/testMultiplier);
                 console.log("<<<sync(): TPVAnchorPrime: ", totalPoolValueAnchorPrime/testMultiplier);
                 console.log("<<<sync(): Price of Float: ", (pairReserve1*1e18/pairReserve0)/testMultiplier);
-                gammaMulDecimals = (virtualFloatBalance*1e18) /  totalPoolValueFloatPrime;
+                gammaMulDecimals = ((virtualFloatBalance - pylonReserve0) *1e18) /  totalPoolValueFloatPrime;
                 console.log("<<<sync(): Case 2, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaFloat'=", gammaMulDecimals/testMultiplier);
 

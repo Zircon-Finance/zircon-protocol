@@ -467,7 +467,7 @@ describe("Pylon", () => {
         // We should receive float tokens and pylon should've minted some pair shares
         // Let's check...
         console.log(await poolTokenInstance0.balanceOf(account.address))
-        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90911411923032045"))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90914118768158624"))
         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('999999999999999000'))
 
         // Now let's test to receive some anchor tokens
@@ -475,7 +475,7 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, token0Amount)
         await pylonInstance.mintAsync100(account.address, true);
         // Let's check...
-        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90911411923032045"))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90914118768158624"))
         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1002066666469537048'))
     });
 
