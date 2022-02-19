@@ -11,6 +11,7 @@ import "./libraries/ZirconLibrary.sol";
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import "hardhat/console.sol";
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+import "./libraries/ZirconLibrary.sol";
 
 contract ZirconPylon {
     using SafeMath for uint112;
@@ -372,42 +373,48 @@ contract ZirconPylon {
         sync();
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
-        uint balance;
-        uint reserve;
-
-        //TODO: Bug, this mints pTokens before actually doing the swap
-
+        uint amountIn;
         if (isAnchor) {
-            reserve = reserve1;
-            balance = IERC20Uniswap(pair.token1).balanceOf(address(this));
-            liquidity = _mintPoolToken(balance, _reserve1, _reservePair1, anchorPoolToken, to, isAnchor);
+            uint balance = IERC20Uniswap(pair.token1).balanceOf(address(this));
+            amountIn = balance.sub(_reserve1);
         }else{
-            reserve = reserve0;
-            balance = IERC20Uniswap(pair.token0).balanceOf(address(this));
-            liquidity = _mintPoolToken(balance, _reserve0, _reservePair0, floatPoolToken, to, isAnchor);
+            uint balance = IERC20Uniswap(pair.token0).balanceOf(address(this));
+            amountIn = balance.sub(_reserve0);
         }
-        uint amountIn = balance.sub(reserve);
         _safeTransfer(isAnchor ? pair.token1 : pair.token0, pairAddress, amountIn);
-        IZirconPair(pairAddress).mintOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);
+        bool shouldTakeReserve0 = isFloatReserve0 ? !isAnchor : isAnchor;
+        (, uint amount0, uint amount1) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
+        uint amounOut0 = isFloatReserve0 ? amount0 : amount1;
+        uint amounOut1 = isFloatReserve0 ? amount1 : amount0;
 
+        virtualAnchorBalance += amounOut0;
+        virtualFloatBalance += amounOut1;
+
+        liquidity = getLiquidityFromPoolTokens(amounOut0, amounOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
+        IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
         //TODO: This only updates k and pt supply, doesn't re-sync
         _updateVariables();
 
         emit MintAsync100(msg.sender, amountIn);
     }
 
-    function getLiquidityFromPoolTokens() private returns (uint liquidity){
+    function getLiquidityFromPoolTokens(uint amountIn0, uint amountIn1, bool shouldMintAnchor, IZirconPoolToken pt) private returns (uint liquidity){
+        (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
+        (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
+
         if (shouldMintAnchor) {
             uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
+            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve1, _reserve1, gammaMulDecimals, virtualAnchorBalance);
 
-            liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
+            //liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
         }else{
             uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
+            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve0, _reserve0, gammaMulDecimals, virtualAnchorBalance);
 
             // TODO: Change def of Gamma everywhere so that it's adjusted when tpv < vab + vfb (i.e the pool operates on fractional reserve)
-            liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
+            //liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
             // Todo: Change toTransfer (probably remove?)
         }
     }
@@ -420,7 +427,6 @@ contract ZirconPylon {
         IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
         Pair memory _pair = pair;
         IZirconPair pairZircon = IZirconPair(pairAddress);
-        (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
 
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
         uint amountIn0;
@@ -447,7 +453,7 @@ contract ZirconPylon {
         // TODO: check maximum to mint
         console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
 
-        liquidity = getLiquidityFromPoolTokens();
+        liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, pt);
 
         console.log(">>MintAsync>>", liquidity);
         {
@@ -569,25 +575,25 @@ contract ZirconPylon {
 
     // Burn Async send both tokens 50-50
     // Liquidity has to be sent before
-    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
-        sync();
-
-        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
-        uint liquidity = pt.balanceOf(address(this));
-        require(liquidity > 0, "ZP: Not enough liquidity inserted");
-        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
-        console.log("PTU", ptu);
-        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
-
-        _safeTransfer(pairAddress, pairAddress, ptu);
-        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
-        amount0 = isFloatReserve0 ? amountA : amountB;
-        amount1 = isFloatReserve0 ? amountB : amountA;
-        virtualAnchorBalance -= amount0;
-        virtualFloatBalance -= amount1;
-        emit BurnAsync(msg.sender, amount0, amount1);
-
-    }
+//    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
+//        sync();
+//
+//        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
+//        uint liquidity = pt.balanceOf(address(this));
+//        require(liquidity > 0, "ZP: Not enough liquidity inserted");
+//        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
+//        console.log("PTU", ptu);
+//        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
+//
+//        _safeTransfer(pairAddress, pairAddress, ptu);
+//        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
+//        amount0 = isFloatReserve0 ? amountA : amountB;
+//        amount1 = isFloatReserve0 ? amountB : amountA;
+//        virtualAnchorBalance -= amount0;
+//        virtualFloatBalance -= amount1;
+//        emit BurnAsync(msg.sender, amount0, amount1);
+//
+//    }
 
     // Function That calculates the amount of reserves in PTU
     // and the amount of the minimum from liquidity and reserves
