@@ -332,6 +332,14 @@ contract ZirconPylon {
             // When @pts is null we mint some liquidity to null address to ensure pt is never 0
             if (pts == 0) pt.mint(address(0), MINIMUM_LIQUIDITY);
 
+            console.log("<<<_mintPoolToken: (Before calculatePTU) isAnchor: ", isAnchor);
+            console.log("<<<_mintPoolToken: amountIn: ", amountIn);
+            console.log("<<<_mintPoolToken: pts: ", pts);
+            console.log("<<<_mintPoolToken: pairReserve: ", pairReserve);
+            console.log("<<<_mintPoolToken: pylonReserve: ", pylonReserve);
+            console.log("<<<_mintPoolToken: gamma: ", _gamma);
+            console.log("<<<_mintPoolToken: vab: ", _vab);
+
             liquidity = ZirconLibrary.calculatePTU(isAnchor, amountIn, pts, pairReserve, pylonReserve, _gamma, _vab);
 
             console.log("<<<_mintPoolToken: liquidity to mint: ", liquidity/testMultiplier);
@@ -369,7 +377,9 @@ contract ZirconPylon {
     }
 
     function mintAsync100(address to, bool isAnchor) isInitialized external returns (uint liquidity) {
+        console.log("<<<_mintAsync100: gamma before Sync: ", gammaMulDecimals/testMultiplier);
         sync();
+        console.log("<<<_mintAsync100: gamma after Sync: ", gammaMulDecimals/testMultiplier);
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
         uint balance;
@@ -380,10 +390,13 @@ contract ZirconPylon {
         if (isAnchor) {
             reserve = reserve1;
             balance = IERC20Uniswap(pair.token1).balanceOf(address(this));
+            console.log("<<<_mintAsync100: Calling _mintPoolToken");
+
             liquidity = _mintPoolToken(balance, _reserve1, _reservePair1, anchorPoolToken, to, isAnchor);
         }else{
             reserve = reserve0;
             balance = IERC20Uniswap(pair.token0).balanceOf(address(this));
+            console.log("<<<_mintAsync100: Calling _mintPoolToken");
             liquidity = _mintPoolToken(balance, _reserve0, _reservePair0, floatPoolToken, to, isAnchor);
         }
         uint amountIn = balance.sub(reserve);
@@ -472,8 +485,8 @@ contract ZirconPylon {
         // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
         uint currentK = uint(pairReserve0).mul(pairReserve1);
-        console.log("<<<Pylon:sync()::::::::pairReserve0: ", pairReserve0); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
-        console.log("<<<Pylon:sync()::::::::pairReserve1: ", pairReserve1); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
+        console.log("<<<Pylon:sync()::::::::pairReserve0: ", pairReserve0/testMultiplier); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
+        console.log("<<<Pylon:sync()::::::::pairReserve1: ", pairReserve1/testMultiplier); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
         console.log("<<<Pylon:sync()::::::::currentK: ", currentK); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
         console.log("<<<Pylon:sync()::::::::lastK: ", lastK);
 
@@ -491,7 +504,7 @@ contract ZirconPylon {
 
             //TODO: Add system that accumulates fees to cover insolvent withdrawals (and thus changes ptb)
             uint totalPoolValueAnchorPrime = translateToPylon(pairReserve1.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
-            uint totalPoolValueFloatPrime = translateToPylon(pairReserve0.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
+        uint totalPoolValueFloatPrime = translateToPylon(pairReserve0.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
             //console.log("<<<Pylon:sync::::::::tpv'=", totalPoolValueAnchorPrime/testMultiplier);
             //console.log("<<<Pylon:sync::::::::r0,r1=", pairReserve0/testMultiplier, pairReserve1/testMultiplier);
 
@@ -511,11 +524,17 @@ contract ZirconPylon {
 
             if (virtualAnchorBalance < totalPoolValueAnchorPrime/2) {
                 gammaMulDecimals = 1e18 - (virtualAnchorBalance*1e18 /  totalPoolValueAnchorPrime);
+                console.log("<<<sync(): Case 1, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaAnchor'=", gammaMulDecimals/testMultiplier);
 
             }else{
                 //TODO: Check that this works and there are no gamma that assume gamma is ftv/atv+ftv
+                console.log("<<<sync(): vfb: ", virtualFloatBalance/testMultiplier);
+                console.log("<<<sync(): TPVFloatPrime: ", totalPoolValueFloatPrime/testMultiplier);
+                console.log("<<<sync(): TPVAnchorPrime: ", totalPoolValueAnchorPrime/testMultiplier);
+                console.log("<<<sync(): Price of Float: ", (pairReserve1*1e18/pairReserve0)/testMultiplier);
                 gammaMulDecimals = (virtualFloatBalance*1e18) /  totalPoolValueFloatPrime;
+                console.log("<<<sync(): Case 2, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaFloat'=", gammaMulDecimals/testMultiplier);
 
             }
