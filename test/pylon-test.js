@@ -324,7 +324,8 @@ describe("Pylon", () => {
     // TODO: Do test extracting liquidity here
     it('sync', async function () {
         // Initializing
-        await init(expandTo18Decimals(5), expandTo18Decimals(  10))
+        await init(expandTo18Decimals(10), expandTo18Decimals(  100))
+
         // VAB at the beginning is equal to the minted pool tokens
         let vab = await pylonInstance.virtualAnchorBalance();
         console.log(vab)

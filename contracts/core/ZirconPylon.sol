@@ -225,6 +225,8 @@ contract ZirconPylon {
     // Update reserves and, on the first call per block, price accumulator
     // Any excess of balance is going to be donated to the pair
     // So... here we get the maximum of both tokens and we mint Pool Tokens
+
+    //Sends pylonReserves to pool if there is a match
     function _update() private {
         // Let's take the current balances
         Pair memory _pair = pair;
@@ -236,7 +238,7 @@ contract ZirconPylon {
         (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
 
         // Max0 and Max1 are two variables representing the maximum that can be minted on sync
-        // Min0/2 & Min1/2 remains as reserves on the pylon
+        // Min0/2 & Min1/2 remain as reserves on the pylon
         // In the case the pair hasn't been initialized pair reserves will be 0 so we take our current balance as the maximum
         uint reservesTranslated0 = translateToPylon(_pairReserve0);
         uint reservesTranslated1 = translateToPylon(_pairReserve1);
@@ -361,11 +363,16 @@ contract ZirconPylon {
     // External Function called to mint pool Token
     // Liquidity have to be sent before
     // TODO: recheck in dump scenario if sync pool can be blocked
+
+    //aka syncMint
     function mintPoolTokens(address to, bool isAnchor) isInitialized external returns (uint liquidity) {
         sync();
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
 
+
+        //Mints pool tokens regardless of reserve situation
+        //TODO: Check _mintPooltoken
         if (isAnchor) {
             uint balance1 = IERC20Uniswap(pair.token1).balanceOf(address(this));
             liquidity = _mintPoolToken(balance1, _reserve1, _reservePair1, anchorPoolToken, to, isAnchor);
@@ -373,6 +380,8 @@ contract ZirconPylon {
             uint balance0 = IERC20Uniswap(pair.token0).balanceOf(address(this));
             liquidity = _mintPoolToken(balance0, _reserve0, _reservePair0, floatPoolToken, to, isAnchor);
         }
+
+        //Sends tokens into pool if there is a match
         _update();
 
     }
@@ -432,68 +441,73 @@ contract ZirconPylon {
     }
 
     //TODO: Transfer first then calculate on basis of pool token share how many share we should give to the user
-    function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
-        sync();
-        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
-        address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
-        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
-        Pair memory _pair = pair;
-        IZirconPair pairZircon = IZirconPair(pairAddress);
-
-        (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
-        uint amountIn0;
-        uint amountIn1;
-        {
-            address _token0 = _pair.token0;
-            address _token1 = _pair.token1;
-            IZirconPair _pairZircon = pairZircon;
-            uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
-            uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
-            console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);
-            console.log("<<<Pylon:m::::::::", balance1/testMultiplier, reserve1/testMultiplier);
-            amountIn0 = balance0.sub(_reserve0);
-            amountIn1 = balance1.sub(_reserve1);
-            console.log("<<<Pylon:first::::::::", amountIn0, amountIn1);
-
-            require(amountIn1 > 0 && amountIn0 > 0, "ZirconPylon: Not Enough Liquidity");
-            _safeTransfer(_token0, pairAddress, amountIn0);
-            _safeTransfer(_token1, pairAddress, amountIn1);
-            _pairZircon.mint(address(this));
-        }
-
-
-        //        uint deltaSupply = pair.totalSupply().sub(_totalSupply);
-        // TODO: maybe another formula is faster
-        // TODO: check maximum to mint
-        console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
-
-        liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, pt);
-
-        console.log(">>MintAsync>>", liquidity);
-        {
-            address _to = to;
-            uint _liquidity = liquidity;
-            pt.mint(_to, _liquidity);
-            console.log("<<<Pylon:liquidity::::::::", _liquidity/testMultiplier);
-
-            uint fee = feeTo != address(0) ? 0 : _liquidity.mul(dynamicFeePercentage)/100;
-            if (fee != 0) _mintFee(fee, _poolTokenAddress);
-            emit MintAsync(msg.sender, amountIn0, amountIn1);
-
-            }
-        console.log("<<<Pylon:mintAsync:::::::: \n\n");
-
-        _updateVariables();
-    }
+//    function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
+//        sync();
+//        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
+//        address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
+//        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
+//        Pair memory _pair = pair;
+//        IZirconPair pairZircon = IZirconPair(pairAddress);
+//
+//        (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
+//        uint amountIn0;
+//        uint amountIn1;
+//        {
+//            address _token0 = _pair.token0;
+//            address _token1 = _pair.token1;
+//            IZirconPair _pairZircon = pairZircon;
+//            uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+//            uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+//            console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);
+//            console.log("<<<Pylon:m::::::::", balance1/testMultiplier, reserve1/testMultiplier);
+//            amountIn0 = balance0.sub(_reserve0);
+//            amountIn1 = balance1.sub(_reserve1);
+//            console.log("<<<Pylon:first::::::::", amountIn0, amountIn1);
+//
+//            require(amountIn1 > 0 && amountIn0 > 0, "ZirconPylon: Not Enough Liquidity");
+//            _safeTransfer(_token0, pairAddress, amountIn0);
+//            _safeTransfer(_token1, pairAddress, amountIn1);
+//            _pairZircon.mint(address(this));
+//        }
+//
+//
+//        //        uint deltaSupply = pair.totalSupply().sub(_totalSupply);
+//        // TODO: maybe another formula is faster
+//        // TODO: check maximum to mint
+//        console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
+//
+//        liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, pt);
+//
+//        console.log(">>MintAsync>>", liquidity);
+//        {
+//            address _to = to;
+//            uint _liquidity = liquidity;
+//            pt.mint(_to, _liquidity);
+//            console.log("<<<Pylon:liquidity::::::::", _liquidity/testMultiplier);
+//
+//            uint fee = feeTo != address(0) ? 0 : _liquidity.mul(dynamicFeePercentage)/100;
+//            if (fee != 0) _mintFee(fee, _poolTokenAddress);
+//            emit MintAsync(msg.sender, amountIn0, amountIn1);
+//
+//            }
+//        console.log("<<<Pylon:mintAsync:::::::: \n\n");
+//
+//        _updateVariables();
+//    }
 
     function sync() private {
+
+        //Prevents this from being called while the underlying pool is getting flash loaned
         if(msg.sender != pairAddress) { IZirconPair(pairAddress).tryLock(); }
+
         // So this thing needs to get pool reserves, get the price of the float asset in anchor terms
         // Then it applies the base formula:
         // Adds fees to virtualFloat and virtualAnchor
         // And then calculates Gamma so that the proportions are correct according to the formula
+
         (uint112 pairReserve0, uint112 pairReserve1) = getPairReservesNormalized();
         (uint112 pylonReserve0, uint112 pylonReserve1,) = getSyncReserves();
+
         // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
         uint currentK = uint(pairReserve0).mul(pairReserve1);
@@ -515,8 +529,9 @@ contract ZirconPylon {
             // Let's get the amount of total pool value own by pylon
 
             //TODO: Add system that accumulates fees to cover insolvent withdrawals (and thus changes ptb)
+
             uint totalPoolValueAnchorPrime = translateToPylon(pairReserve1.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
-        uint totalPoolValueFloatPrime = translateToPylon(pairReserve0.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
+            uint totalPoolValueFloatPrime = translateToPylon(pairReserve0.mul(2)); // .mul(poolTokenBalance)/poolTokensPrime;
             //console.log("<<<Pylon:sync::::::::tpv'=", totalPoolValueAnchorPrime/testMultiplier);
             //console.log("<<<Pylon:sync::::::::r0,r1=", pairReserve0/testMultiplier, pairReserve1/testMultiplier);
 
@@ -534,25 +549,44 @@ contract ZirconPylon {
             //console.log("<<<Pylon:sync:::::::prev:vab'=", virtualAnchorBalance/testMultiplier,
             //    "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
 
-            if (virtualAnchorBalance < totalPoolValueAnchorPrime/2) {
-                gammaMulDecimals = 1e18 - (virtualAnchorBalance*1e18 /  totalPoolValueAnchorPrime);
+            //gamma is supposed to always be an accurate reflection of the float share as a percentage of the totalPoolValue
+            //however vfb also includes the syncPool reserve portion, which is completely outside of the pools.
+            //Nonetheless, the syncPool is still considered part of the user base/float share.
+            //This is relevant primarily for fee calculations, but that's already a given: you just use the same proportions.
+            //In all other places we (should) already account for the sync pool separately.
+
+
+        if ((virtualAnchorBalance - pylonReserve1) < totalPoolValueAnchorPrime/2) {
+                gammaMulDecimals = 1e18 - ((virtualAnchorBalance - pylonReserve1)*1e18 /  totalPoolValueAnchorPrime);
                 console.log("<<<sync(): Case 1, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaAnchor'=", gammaMulDecimals/testMultiplier);
 
-            }else{
+            } else {
                 //TODO: Check that this works and there are no gamma that assume gamma is ftv/atv+ftv
                 console.log("<<<sync(): vfb: ", virtualFloatBalance/testMultiplier);
                 console.log("<<<sync(): TPVFloatPrime: ", totalPoolValueFloatPrime/testMultiplier);
                 console.log("<<<sync(): TPVAnchorPrime: ", totalPoolValueAnchorPrime/testMultiplier);
-                console.log("<<<sync(): Price of Float: ", (pairReserve1*1e18/pairReserve0)/testMultiplier);
+                console.log("<<<sync(): Price of Float: ", (pairReserve1*1e18/pairReserve0));
+
+
                 gammaMulDecimals = ((virtualFloatBalance - pylonReserve0) *1e18) /  totalPoolValueFloatPrime;
                 console.log("<<<sync(): Case 2, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaFloat'=", gammaMulDecimals/testMultiplier);
 
             }
             // TODO: (see if make sense to insert a floor to for example 25/75)
-            //TODO: Think of way to adjust it by using tpv/(ftv+atv) because otherwise anchors get more fees than they should
+
+
+            //Sync pool also gets a claim to these
+
+            //When operating on fractional, gamma is higher than it should be compared to ftv + atv.
+            //This means that anchors get more fees than they "should", which kinda works out because they're at high risk.
+            //It works as an additional incentive to not withdraw.
+
             virtualAnchorBalance += (feeValueAnchor.mul(gammaMulDecimals))/1e18;
+
+
+
             virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValueFloat)/1e18;
             //console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance, "vab", virtualAnchorBalance);
 
