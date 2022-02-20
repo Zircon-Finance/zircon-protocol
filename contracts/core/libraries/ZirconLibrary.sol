@@ -21,12 +21,15 @@ library ZirconLibrary {
     // @pR0, @pR1 the pair reserves
     // @b0, @b1 the balances to calculate
     function _getMaximum(uint _reserve0, uint _reserve1, uint _b0, uint _b1) pure internal returns (uint maxX, uint maxY)  {
+
+        //Expresses b1 in units of reserve0
         uint px = _reserve0.mul(_b1)/_reserve1;
+
         if (px > _b0) {
             maxX = _b0;
-            maxY = _b0.mul(_reserve1)/_reserve0;
+            maxY = _b0.mul(_reserve1)/_reserve0; //b0 in units of reserve1
         } else {
-            maxX = px;
+            maxX = px; //max is b1 but in reserve0 units
             maxY = _b1;
         }
     }
