@@ -374,10 +374,7 @@ contract ZirconPylon {
         sync();
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
-
-
         //Mints pool tokens regardless of reserve situation
-
         //_mintPoolToken(uint _balance, uint112 _pylonReserve, uint112 _pairReserve, address _poolTokenAddress, address _to, bool isAnchor) private returns (uint liquidity)
 
         if (isAnchor) {

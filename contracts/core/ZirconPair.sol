@@ -11,6 +11,7 @@ import './libraries/SafeMath.sol';
 import "./ZirconERC20.sol";
 import "./interfaces/IZirconFactory.sol";
 import "./libraries/console.sol";
+import "./libraries/ZirconLibrary.sol";
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -120,15 +121,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
     }
 
 
-    // TODO: centralize this
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
-        require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
-        require(reserveIn > 0 && reserveOut > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        uint amountInWithFee = amountIn.mul(997);
-        uint numerator = amountInWithFee.mul(reserveOut);
-        uint denominator = reserveIn.mul(1000).add(amountInWithFee);
-        amountOut = numerator / denominator;
-    }
 
 
     function tryLock() external lock {}
@@ -250,10 +242,10 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         amount0 = balance0.sub(_reserve0);
         amount1 = balance1.sub(_reserve1);
         if (isReserve0) {
-            amount1 = getAmountOut(amount0/2, reserve1, reserve0);
+            amount1 = ZirconLibrary.getAmountOut(amount0/2,reserve0,reserve1);
             amount0 = amount0/2;
         }else {
-            amount0 = getAmountOut(amount1/2, reserve0, reserve1);
+            amount0 = ZirconLibrary.getAmountOut(amount1/2, reserve1, reserve0);
             amount1 = amount1/2;
         }
 
@@ -298,13 +290,13 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
         if (isReserve0) {
             console.log("amount0", amount0);
-            amount0 += getAmountOut(amount1, _reserve1 - amount1, _reserve0 - amount0);
+            amount0 += ZirconLibrary.getAmountOut(amount1, _reserve1 - amount1, _reserve0 - amount0);
             console.log("amount0", amount0);
             amount = amount0;
             require(amount < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
             console.log("amount0", amount1);
-            amount1 += getAmountOut(amount0, _reserve0 - amount0, _reserve1 - amount1);
+            amount1 += ZirconLibrary.getAmountOut(amount0, _reserve0 - amount0, _reserve1 - amount1);
             console.log("amount0", amount1);
             amount = amount1;
             require(amount < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
