@@ -441,13 +441,13 @@ contract ZirconPylon {
         if (shouldMintAnchor) {
             uint amountInAdjusted = Math.min(amountIn0.mul(_pairReserve1).mul(2)/_pairReserve0, amountIn1.mul(2)); //Adjust AmountIn0 to its value in Anchor tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
-            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve1, _reserve1, gammaMulDecimals, virtualAnchorBalance);
+            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), translateToPylon(_pairReserve1), _reserve1, gammaMulDecimals, virtualAnchorBalance);
             virtualAnchorBalance += amountInAdjusted;
             //liquidity = (amountInAdjusted.mul(pt.totalSupply()))/virtualAnchorBalance;
         }else{
             uint amountInAdjusted = Math.min(amountIn1.mul(_pairReserve0).mul(2)/_pairReserve1, amountIn0.mul(2)); //Adjust AmountIn1 to its value in Float tokens
             console.log(">>amountInAdjusted>>", amountInAdjusted);
-            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), _pairReserve0, _reserve0, gammaMulDecimals, virtualAnchorBalance);
+            liquidity = ZirconLibrary.calculatePTU(shouldMintAnchor, amountInAdjusted, pt.totalSupply(), translateToPylon(_pairReserve0), _reserve0, gammaMulDecimals, virtualAnchorBalance);
             virtualFloatBalance += amountInAdjusted;
 
             //liquidity = amountInAdjusted.mul(pt.totalSupply())*1e18/(_pairReserve0.mul(2).mul(gammaMulDecimals));
