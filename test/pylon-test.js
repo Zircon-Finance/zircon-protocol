@@ -422,8 +422,8 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300).div(11))
         //Let's initialize the Pylon, this should call two sync
         await pylonInstance.initPylon(account.address)
-        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90909090909090909"))
-        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(expandTo18Decimals(1))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("154545454545454545454"))
+        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq((ethers.BigNumber.from("481818181818181818181")))
 
 
         // Let's send some tokens
@@ -457,12 +457,15 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300).div(11))
         //Let's initialize the Pylon, this should call two sync
         await pylonInstance.initPylon(account.address)
-        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90909090909089909"))
-        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('999999999999999000'))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("154545454545454544454"))
+        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('481818181818181817181'))
+
+        //154545454545454544454
+        //154554001905871361150
 
 
         // Let's send some tokens
-        const token0Amount = expandTo18Decimals(1)
+        const token0Amount = expandTo18Decimals(100)
         await token0.transfer(pylonInstance.address, token0Amount)
         // await token1.transfer(pylonInstance.address, token0Amount)
         // Let's try to mint async

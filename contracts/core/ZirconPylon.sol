@@ -399,6 +399,7 @@ contract ZirconPylon {
         sync();
         console.log("<<<_mintAsync100: gamma after Sync: ", gammaMulDecimals/testMultiplier);
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
+
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
         uint amountIn;
         if (isAnchor) {
@@ -410,18 +411,27 @@ contract ZirconPylon {
         }
         require(amountIn > 0, "ZP: INSUFFICIENT_AMOUNT");
         _safeTransfer(isAnchor ? pylonTokens.token1 : pylonTokens.token0, pairAddress, amountIn);
+        console.log("<<<_mintAsync100: totalUniV2PTBefore: ", IZirconPair(pairAddress).totalSupply() / testMultiplier);
+        console.log("<<<_mintAsync100: amountInUni: ", amountIn / testMultiplier);
         bool shouldTakeReserve0 = isFloatReserve0 ? !isAnchor : isAnchor;
-        (, uint amount0, uint amount1) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
-        uint amounOut0 = isFloatReserve0 ? amount0 : amount1;
-        uint amounOut1 = isFloatReserve0 ? amount1 : amount0;
+
+        {
+            (, uint amount0, uint amount1) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
+            uint amountOut0 = isFloatReserve0 ? amount0 : amount1;
+            uint amountOut1 = isFloatReserve0 ? amount1 : amount0;
+
+            console.log("<<<_mintAsync100: amountOut0: ", amountOut0 / testMultiplier);
+            console.log("<<<_mintAsync100: amountOut1: ", amountOut1 / testMultiplier);
+
+            //console.log("<<<_mintAsync100: liquidityUniV2: ", liquidityRes / testMultiplier);
+            console.log("<<<_mintAsync100: totalUniV2PT: ", IZirconPair(pairAddress).totalSupply() / testMultiplier);
 
 
+            liquidity = getLiquidityFromPoolTokens(amountOut0, amountOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
+            console.log("<<<_mintAsync100: liquidity minted: ", liquidity / testMultiplier);
 
-        liquidity = getLiquidityFromPoolTokens(amounOut0, amounOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
-        console.log("<<<_mintAsync100: liquidity minted: ", liquidity/testMultiplier);
-
-        IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
-        //TODO: This only updates k and pt supply, doesn't re-sync
+            IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
+        }//TODO: This only updates k and pt supply, doesn't re-sync
         _updateVariables();
 
         emit MintAsync100(msg.sender, amountIn);
