@@ -252,8 +252,8 @@ contract ZirconPylon {
             // Get Maximum simple gets the maximum quantity of token that we can mint
 
             (uint px, uint py) = ZirconLibrary._getMaximum(
-                _pairReserve0 == 0 ? balance0 : reservesTranslated0, //TODO: @david changed to reservesTranslated, likely the source of the excess reserve bug
-                _pairReserve1 == 0 ? balance1 : reservesTranslated1,
+                _pairReserve0 == 0 ? balance0 : _pairReserve0,
+                _pairReserve1 == 0 ? balance1 : _pairReserve1,
                 balance0.sub(max0/2), balance1.sub(max1/2));
             // Transferring tokens to pair and minting
             if(px != 0) _safeTransfer(_pylonTokens.token0, pairAddress, px);
@@ -268,8 +268,7 @@ contract ZirconPylon {
         // Let's remove the tokens that are above max0 and max1, and donate them to the pool
         // This is for cases where somebody just donates tokens to pylon; tx reverts if this done via core functions
         //Todo: This is likely also invoked if the price dumps and the sync pool is suddenly above max, not ideal behavior...
-        //Todo: Also this excess would get removed earlier anyway since it sends anything above max/2
-        //TODO: Probably makes sense to put this above everything else, then allow this to be called publicly to allow unbricking the sync pool
+
         updateReservesRemovingExcess(balance0, balance1, max0, max1);
         _updateVariables();
 
@@ -315,12 +314,11 @@ contract ZirconPylon {
         console.log("<<<_mintPoolToken pt supply: ", pts/testMultiplier);
         if(pts != 0){
             // When pts is null we don't update @vab and @vfb because in the init are already updated
-            //Todo: @david Flagging that the code below was indeed doubling vab/vfb since it was already set in init, delete this comment when you've seen it.
             if(isAnchor) {
-                //virtualAnchorBalance += amountIn;
+                virtualAnchorBalance += amountIn;
                 console.log("<<<_mintPoolToken: Vab: ", virtualAnchorBalance/testMultiplier);
             }else{
-                //virtualFloatBalance += amountIn;
+                virtualFloatBalance += amountIn;
                 console.log("<<<_mintPoolToken: Vfb: ", virtualFloatBalance/testMultiplier);
             }
         }
@@ -555,6 +553,8 @@ contract ZirconPylon {
             uint feeValueFloat = totalPoolValueFloatPrime.mul(d)/1e18;
             //console.log("<<<Pylon:sync::::::::fee=", feeValueAnchor/testMultiplier);
 
+
+
             // Calculating gamma, variable used to calculate tokens to mint and withdrawals
             //console.log("<<<Pylon:sync:::::::prev:vab'=", virtualAnchorBalance/testMultiplier,
             //    "<<<Pylon:sync::::::::vfb'=", virtualFloatBalance/testMultiplier);
@@ -565,6 +565,15 @@ contract ZirconPylon {
             //This is relevant primarily for fee calculations, but that's already a given: you just use the same proportions.
             //In all other places we (should) already account for the sync pool separately.
 
+            //When operating on fractional, gamma is higher than it should be compared to ftv + atv.
+            //This means that anchors get more fees than they "should", which kinda works out because they're at high risk.
+            //It works as an additional incentive to not withdraw.
+
+            virtualAnchorBalance += (feeValueAnchor.mul(gammaMulDecimals))/1e18;
+
+
+
+            virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValueFloat)/1e18;
 
         if ((virtualAnchorBalance - pylonReserve1) < totalPoolValueAnchorPrime/2) {
                 gammaMulDecimals = 1e18 - ((virtualAnchorBalance - pylonReserve1)*1e18 /  totalPoolValueAnchorPrime);
@@ -589,15 +598,6 @@ contract ZirconPylon {
 
             //Sync pool also gets a claim to these
 
-            //When operating on fractional, gamma is higher than it should be compared to ftv + atv.
-            //This means that anchors get more fees than they "should", which kinda works out because they're at high risk.
-            //It works as an additional incentive to not withdraw.
-
-            virtualAnchorBalance += (feeValueAnchor.mul(gammaMulDecimals))/1e18;
-
-
-
-            virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValueFloat)/1e18;
             //console.log("<<<Pylon:sync::::::::vfb'=", virtualFloatBalance, "vab", virtualAnchorBalance);
 
             emit PylonSync(virtualAnchorBalance, virtualFloatBalance, gammaMulDecimals);
