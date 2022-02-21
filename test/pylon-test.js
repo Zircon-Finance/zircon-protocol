@@ -449,6 +449,8 @@ describe("Pylon", () => {
 
     it('should add async liquidity 100', async function () {
         // Let's initialize the pool and pylon
+
+        console.log("New Test: Async Liquidity 100%")
         await addLiquidity(expandTo18Decimals(1700), expandTo18Decimals(  5300))
         // Let's transfer some tokens to the Pylon
         await token0.transfer(pylonInstance.address, expandTo18Decimals(1700).div(11))
