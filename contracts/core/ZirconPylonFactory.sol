@@ -54,7 +54,7 @@ contract ZirconPylonFactory {
 
     // Adding Pylon
     // First Token is always the Float and the second one is the Anchor
-    function addPylon(address _pairAddress, address _tokenA, address _tokenB) external returns (address pylonAddress){
+    function addPylon(address _pairAddress, address _tokenA, address _tokenB) external returns (address pylonAddress) {
         require(_tokenA != _tokenB, 'ZF: IDENTICAL_ADDRESSES');
         require(getPylon[_tokenA][_tokenB] == address(0), 'ZF: PYLON_EXISTS');
 
