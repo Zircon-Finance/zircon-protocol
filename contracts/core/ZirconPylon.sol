@@ -391,42 +391,44 @@ contract ZirconPylon {
 
     }
 
+    function _disincorporateAmount(uint _amountIn, bool isAnchor) private returns (uint amount0, uint amount1) {
+        (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
+        amount0 = !isAnchor ? _amountIn/2 : ZirconLibrary.getAmountOut(_amountIn/2, _reservePair1, _reservePair0);
+        amount1 = isAnchor ? _amountIn/2 : ZirconLibrary.getAmountOut(_amountIn/2, _reservePair0, _reservePair1);
+    }
+
     function mintAsync100(address to, bool isAnchor) isInitialized external returns (uint liquidity) {
         console.log("<<<_mintAsync100: gamma before Sync: ", gammaMulDecimals/testMultiplier);
         sync();
         console.log("<<<_mintAsync100: gamma after Sync: ", gammaMulDecimals/testMultiplier);
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves();
 
-        (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
         uint amountIn;
         if (isAnchor) {
-            uint balance = IERC20Uniswap(pylonTokens.token1).balanceOf(address(this));
-            amountIn = balance.sub(_reserve1);
+
+        uint balance = IERC20Uniswap(pylonTokens.token1).balanceOf(address(this));
+            console.log("<<<_mintAsync100: balance: ", balance/testMultiplier, reserve1/testMultiplier);
+
+        amountIn = balance.sub(_reserve1);
         }else{
             uint balance = IERC20Uniswap(pylonTokens.token0).balanceOf(address(this));
             amountIn = balance.sub(_reserve0);
         }
-        require(amountIn > 0, "ZP: INSUFFICIENT_AMOUNT");
-        _safeTransfer(isAnchor ? pylonTokens.token1 : pylonTokens.token0, pairAddress, amountIn);
         console.log("<<<_mintAsync100: totalUniV2PTBefore: ", IZirconPair(pairAddress).totalSupply() / testMultiplier);
         console.log("<<<_mintAsync100: amountInUni: ", amountIn / testMultiplier);
+        require(amountIn > 0, "ZP: INSUFFICIENT_AMOUNT");
+        _safeTransfer(isAnchor ? pylonTokens.token1 : pylonTokens.token0, pairAddress, amountIn);
         bool shouldTakeReserve0 = isFloatReserve0 ? !isAnchor : isAnchor;
-
         {
-            (, uint amount0, uint amount1) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
-            uint amountOut0 = isFloatReserve0 ? amount0 : amount1;
-            uint amountOut1 = isFloatReserve0 ? amount1 : amount0;
+            (uint a0, uint a1) = _disincorporateAmount(amountIn, isAnchor);
+            console.log("<<<_mintAsync100: amountOut0: ", a0 / testMultiplier);
+            console.log("<<<_mintAsync100: amountOut1: ", a1 / testMultiplier);
 
-            console.log("<<<_mintAsync100: amountOut0: ", amountOut0 / testMultiplier);
-            console.log("<<<_mintAsync100: amountOut1: ", amountOut1 / testMultiplier);
-
-            //console.log("<<<_mintAsync100: liquidityUniV2: ", liquidityRes / testMultiplier);
-            console.log("<<<_mintAsync100: totalUniV2PT: ", IZirconPair(pairAddress).totalSupply() / testMultiplier);
-
-
-            liquidity = getLiquidityFromPoolTokens(amountOut0, amountOut1, isAnchor, IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
-            console.log("<<<_mintAsync100: liquidity minted: ", liquidity / testMultiplier);
-
+            liquidity = getLiquidityFromPoolTokens(
+                a0, a1,
+                isAnchor,
+                IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken));
+            (uint liq,,) = IZirconPair(pairAddress).mintOneSide(address(this), shouldTakeReserve0);
             IZirconPoolToken(isAnchor ? anchorPoolToken : floatPoolToken).mint(to, liquidity);
         }//TODO: This only updates k and pt supply, doesn't re-sync
         _updateVariables();
@@ -434,7 +436,7 @@ contract ZirconPylon {
         emit MintAsync100(msg.sender, amountIn);
     }
 
-    function getLiquidityFromPoolTokens(uint amountIn0, uint amountIn1, bool shouldMintAnchor, IZirconPoolToken pt) private returns (uint liquidity){
+    function getLiquidityFromPoolTokens(uint amountIn0, uint amountIn1,  bool shouldMintAnchor, IZirconPoolToken pt) private returns (uint liquidity){
         (uint112 _pairReserve0, uint112 _pairReserve1) = getPairReservesNormalized();
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
 
@@ -456,59 +458,59 @@ contract ZirconPylon {
     }
 
     //TODO: Transfer first then calculate on basis of pool token share how many share we should give to the user
-//    function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
-//        sync();
-//        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
-//        address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
-//        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
-//        PylonTokens memory _pylonTokens = pylonTokens;
-//        IZirconPair pairZircon = IZirconPair(pairAddress);
-//
-//        (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
-//        uint amountIn0;
-//        uint amountIn1;
-//        {
-//            address _token0 = _pylonTokens.token0;
-//            address _token1 = _pylonTokens.token1;
-//            IZirconPair _pairZircon = pairZircon;
-//            uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
-//            uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
-//            console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);
-//            console.log("<<<Pylon:m::::::::", balance1/testMultiplier, reserve1/testMultiplier);
-//            amountIn0 = balance0.sub(_reserve0);
-//            amountIn1 = balance1.sub(_reserve1);
-//            console.log("<<<Pylon:first::::::::", amountIn0, amountIn1);
-//
-//            require(amountIn1 > 0 && amountIn0 > 0, "ZirconPylon: Not Enough Liquidity");
-//            _safeTransfer(_token0, pairAddress, amountIn0);
-//            _safeTransfer(_token1, pairAddress, amountIn1);
-//            _pairZircon.mint(address(this));
-//        }
-//
-//
-//        //        uint deltaSupply = pair.totalSupply().sub(_totalSupply);
-//        // TODO: maybe another formula is faster
-//        // TODO: check maximum to mint
-//        console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
-//
-//        liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, pt);
-//
-//        console.log(">>MintAsync>>", liquidity);
-//        {
-//            address _to = to;
-//            uint _liquidity = liquidity;
-//            pt.mint(_to, _liquidity);
-//            console.log("<<<Pylon:liquidity::::::::", _liquidity/testMultiplier);
-//
-//            uint fee = feeTo != address(0) ? 0 : _liquidity.mul(dynamicFeePercentage)/100;
-//            if (fee != 0) _mintFee(fee, _poolTokenAddress);
-//            emit MintAsync(msg.sender, amountIn0, amountIn1);
-//
-//            }
-//        console.log("<<<Pylon:mintAsync:::::::: \n\n");
-//
-//        _updateVariables();
-//    }
+    //    function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
+    //        sync();
+    //        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
+    //        address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
+    //        IZirconPoolToken pt = IZirconPoolToken(_poolTokenAddress);
+    //        PylonTokens memory _pylonTokens = pylonTokens;
+    //        IZirconPair pairZircon = IZirconPair(pairAddress);
+    //
+    //        (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
+    //        uint amountIn0;
+    //        uint amountIn1;
+    //        {
+    //            address _token0 = _pylonTokens.token0;
+    //            address _token1 = _pylonTokens.token1;
+    //            IZirconPair _pairZircon = pairZircon;
+    //            uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+    //            uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+    //            console.log("<<<Pylon:r::::::::", balance0/testMultiplier, reserve0/testMultiplier);
+    //            console.log("<<<Pylon:m::::::::", balance1/testMultiplier, reserve1/testMultiplier);
+    //            amountIn0 = balance0.sub(_reserve0);
+    //            amountIn1 = balance1.sub(_reserve1);
+    //            console.log("<<<Pylon:first::::::::", amountIn0, amountIn1);
+    //
+    //            require(amountIn1 > 0 && amountIn0 > 0, "ZirconPylon: Not Enough Liquidity");
+    //            _safeTransfer(_token0, pairAddress, amountIn0);
+    //            _safeTransfer(_token1, pairAddress, amountIn1);
+    //            _pairZircon.mint(address(this));
+    //        }
+    //
+    //
+    //        //        uint deltaSupply = pair.totalSupply().sub(_totalSupply);
+    //        // TODO: maybe another formula is faster
+    //        // TODO: check maximum to mint
+    //        console.log(">>AmountIn>>", amountIn1, amountIn0, pt.totalSupply());
+    //
+    //        liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, pt);
+    //
+    //        console.log(">>MintAsync>>", liquidity);
+    //        {
+    //            address _to = to;
+    //            uint _liquidity = liquidity;
+    //            pt.mint(_to, _liquidity);
+    //            console.log("<<<Pylon:liquidity::::::::", _liquidity/testMultiplier);
+    //
+    //            uint fee = feeTo != address(0) ? 0 : _liquidity.mul(dynamicFeePercentage)/100;
+    //            if (fee != 0) _mintFee(fee, _poolTokenAddress);
+    //            emit MintAsync(msg.sender, amountIn0, amountIn1);
+    //
+    //            }
+    //        console.log("<<<Pylon:mintAsync:::::::: \n\n");
+    //
+    //        _updateVariables();
+    //    }
 
     function sync() private {
 
@@ -539,7 +541,7 @@ contract ZirconPylon {
 
             // Here it is going to be useful to have a Minimum Liquidity
             // If not we can have some problems
-//            uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
+            //            uint poolTokenBalance = IZirconPair(pairAddress).balanceOf(address(this));
 
             // Let's get the amount of total pool value own by pylon
 
@@ -551,7 +553,7 @@ contract ZirconPylon {
             //console.log("<<<Pylon:sync::::::::r0,r1=", pairReserve0/testMultiplier, pairReserve1/testMultiplier);
 
             uint rootK = Math.sqrt(currentK);
-            uint d = 1e18 - (Math.sqrt(lastK)*poolTokensPrime*1e18)/(rootK*lastPoolTokens);
+            uint d = 1e18 - ((Math.sqrt(lastK)*poolTokensPrime*1e18)/(rootK*lastPoolTokens));
             //console.log("<<<Pylon:sync::::::::lk=", lastK/testMultiplier);
             //console.log("<<<Pylon:sync::::::::lpt'=", lastPoolTokens/testMultiplier);
             //console.log("<<<Pylon:sync::::::::d=", d);
@@ -582,7 +584,7 @@ contract ZirconPylon {
 
             virtualFloatBalance += (1e18-gammaMulDecimals).mul(feeValueFloat)/1e18;
 
-        if ((virtualAnchorBalance - pylonReserve1) < totalPoolValueAnchorPrime/2) {
+            if ((virtualAnchorBalance - pylonReserve1) < totalPoolValueAnchorPrime/2) {
                 gammaMulDecimals = 1e18 - ((virtualAnchorBalance - pylonReserve1)*1e18 /  totalPoolValueAnchorPrime);
                 console.log("<<<sync(): Case 1, gamma: ", gammaMulDecimals/testMultiplier);
                 //console.log("<<<Pylon:sync::::::::gammaAnchor'=", gammaMulDecimals/testMultiplier);
@@ -647,25 +649,25 @@ contract ZirconPylon {
 
     // Burn Async send both tokens 50-50
     // Liquidity has to be sent before
-//    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
-//        sync();
-//
-//        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
-//        uint liquidity = pt.balanceOf(address(this));
-//        require(liquidity > 0, "ZP: Not enough liquidity inserted");
-//        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
-//        console.log("PTU", ptu);
-//        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
-//
-//        _safeTransfer(pairAddress, pairAddress, ptu);
-//        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
-//        amount0 = isFloatReserve0 ? amountA : amountB;
-//        amount1 = isFloatReserve0 ? amountB : amountA;
-//        virtualAnchorBalance -= amount0;
-//        virtualFloatBalance -= amount1;
-//        emit BurnAsync(msg.sender, amount0, amount1);
-//
-//    }
+    //    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
+    //        sync();
+    //
+    //        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
+    //        uint liquidity = pt.balanceOf(address(this));
+    //        require(liquidity > 0, "ZP: Not enough liquidity inserted");
+    //        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
+    //        console.log("PTU", ptu);
+    //        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
+    //
+    //        _safeTransfer(pairAddress, pairAddress, ptu);
+    //        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
+    //        amount0 = isFloatReserve0 ? amountA : amountB;
+    //        amount1 = isFloatReserve0 ? amountB : amountA;
+    //        virtualAnchorBalance -= amount0;
+    //        virtualFloatBalance -= amount1;
+    //        emit BurnAsync(msg.sender, amount0, amount1);
+    //
+    //    }
 
     // Function That calculates the amount of reserves in PTU
     // and the amount of the minimum from liquidity and reserves
