@@ -7,8 +7,7 @@ exports.coreFixtures = async function coreFixtures(address) {
     let factoryInstance = await factory.deploy(address);
 
     let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
-    let factoryPylonInstance = await factoryPylon.deploy(expandTo18Decimals(5), expandTo18Decimals(3),
-        factoryInstance.address);
+    let factoryPylonInstance = await factoryPylon.deploy(factoryInstance.address);
 
     // Deploy Tokens
     let tok0 = await ethers.getContractFactory('Token');

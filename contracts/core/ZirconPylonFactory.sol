@@ -9,17 +9,14 @@ contract ZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
     address public factory;
-    uint public maxFloat;
-    uint public maxAnchor;
+
     uint public maximumPercentageSync;
     uint public dynamicFeePercentage;
 
     event PylonCreated(address indexed token0, address indexed token1, address pair);
     event PoolTokenCreated(address indexed token0, address poolToken);
 
-    constructor(uint _maxFloat, uint _maxAnchor, address _factory) public {
-        maxFloat = _maxFloat;
-        maxAnchor = _maxAnchor;
+    constructor(address _factory) public {
         factory = _factory;
         maximumPercentageSync = 10;
         dynamicFeePercentage = 5;

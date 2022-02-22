@@ -77,10 +77,10 @@ describe("Pylon", () => {
             let pairRes = await pair.getReserves()
 
             if (isAnchor) {
-                let t = (pairRes[1].mul(maxSync).div(100)).sub(pylonRes[1]).sub(10)
+                let t = token0Amount.div(100)
                 await token1.transfer(pylonInstance.address, t)
             }else{
-                let t = (pairRes[0].mul(maxSync).div(100)).sub(pylonRes[0]).sub(10)
+                let t = token1Amount.div(100)
                 await token0.transfer(pylonInstance.address, t)
             }
 
@@ -89,6 +89,7 @@ describe("Pylon", () => {
                 .to.emit(pylonInstance, 'PylonUpdate')
                 .withArgs(expectedRes0, expectedRes1);
             // Let's check the balances, float
+            expect(await pylonInstance.gammaMulDecimals()).to.eq(ethers.BigNumber.from('1000000000000000000'));
             expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(expectedOutputAmount1);
 
             expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(expectedOutputAmount0);
@@ -422,6 +423,7 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300).div(11))
         //Let's initialize the Pylon, this should call two sync
         await pylonInstance.initPylon(account.address)
+        let ptb0Initial =
         expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("154545454545454544454"))
         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq((ethers.BigNumber.from("481818181818181817181")))
 
