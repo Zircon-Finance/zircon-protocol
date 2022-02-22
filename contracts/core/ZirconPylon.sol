@@ -362,6 +362,8 @@ contract ZirconPylon {
 
     }
 
+
+    //Helper function to calculate slippage-adjusted share of pool
     function _disincorporateAmount(uint _amountIn, bool isAnchor) private returns (uint amount0, uint amount1) {
         (uint112 _reservePair0, uint112 _reservePair1) = getPairReservesNormalized();
         amount0 = !isAnchor ? _amountIn/2 : ZirconLibrary.getAmountOut(_amountIn/2, _reservePair1, _reservePair0);
@@ -658,19 +660,40 @@ contract ZirconPylon {
             // Let's get how much liquidity was sent to burn
             uint liquidity = pt.balanceOf(address(this));
 
+
             // Here we calculate max PTU to extract sync reserve + amount in reserves
             (uint reservePT, uint _amount) = preBurn(isAnchor, _totalSupply, liquidity);
             _safeTransfer(isAnchor ? _pylonToken.anchor : _pylonToken.float, to, _amount);
 
             amount = _amount;
 
+            uint omegaMulDecimals;
+
+            if (isAnchor) {
+                (, uint reserveAnchor,) = getSyncReserves();
+                (, uint pairReserves1)  = getPairReservesNormalized();
+
+                //Omega is the slashing factor. It's always equal to 1 if pool has gamma above 50%
+                //If it's below 50%, it begins to go below 1 and thus slash any withdrawal.
+                //Note that in practice this system doesn't activate unless the syncReserves are empty.
+                //Also note that a dump of 60% only generates about 10% of slashing.
+
+                 omegaMulDecimals = ZirconLibrary.slashLiabilityOmega(
+                        translateToPylon(pairReserves1.mul(2)),
+                        reserveAnchor,
+                        gammaMulDecimals,
+                        virtualAnchorBalance);
+            }
+
+
             if (reservePT < liquidity) {
-                _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, liquidity.sub(reservePT), _totalSupply));
+                uint adjustedLiquidity = (liquidity.sub(reservePT)).mul(omegaMulDecimals)/1e18;
+                _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, adjustedLiquidity, _totalSupply));
                 amount += IZirconPair(_pairAddress).burnOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);  // XOR
                 //Bool combines choice of anchor or float with which token is which in the pool
             }
 
-            pt.burn(address(this), liquidity);
+            pt.burn(address(this), liquidity); //Should burn unadjusted amount ofc
             console.log("<<<<liquidity", liquidity);
         }
         console.log("amount", amount);
