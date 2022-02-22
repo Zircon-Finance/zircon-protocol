@@ -680,8 +680,8 @@ contract ZirconPylon {
             uint omegaMulDecimals;
 
             if (isAnchor) {
-                uint (, reserveAnchor) = getSyncReserves();
-                uint (, pairReserves1)  = getPairReservesNormalized();
+                (, uint reserveAnchor,) = getSyncReserves();
+                (, uint pairReserves1)  = getPairReservesNormalized();
 
                 //Omega is the slashing factor. It's always equal to 1 if pool has gamma above 50%
                 //If it's below 50%, it begins to go below 1 and thus slash any withdrawal.
