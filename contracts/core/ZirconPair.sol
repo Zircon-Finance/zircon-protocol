@@ -18,42 +18,42 @@ interface IMigrator {
     function desiredLiquidity() external view returns (uint256);
 }
 
-contract Approved {
-    //-------------------------------------------------
-    //-------------------Open Zircon Diff--------------
-    //-------------------------------------------------
+//contract Approved {
+//    //-------------------------------------------------
+//    //-------------------Open Zircon Diff--------------
+//    //-------------------------------------------------
+//
+//    mapping(address => bool) public zirconApprovedUsers; // Repository for vault, router and other addresses that can call swapNoFee
+//
+//    event UserAdded(address);
+//    event UserRemoved(address);
+//
+//    modifier onlyZircon() {
+//        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
+//        _;
+//    }
+//
+//    //Flexible system, no isContract checks for potential future uses
+//    modifier approved(address _user) {
+//        require(_user != address(this), "ZirconPair: Can't remove approval of self");
+//        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
+//        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
+//        _;
+//    }
+//
+//    function addApprovedUser(address _user) external approved(_user) onlyZircon {
+//        zirconApprovedUsers[_user] = true;
+//        emit UserAdded(_user);
+//    }
+//
+//    function removeApprovedUser(address _user) external approved(_user) onlyZircon {
+//        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved");
+//        zirconApprovedUsers[_user] = false;
+//        emit UserRemoved(_user);
+//    }
+//}
 
-    mapping(address => bool) public zirconApprovedUsers; // Repository for vault, router and other addresses that can call swapNoFee
-
-    event UserAdded(address);
-    event UserRemoved(address);
-
-    modifier onlyZircon() {
-        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
-        _;
-    }
-
-    //Flexible system, no isContract checks for potential future uses
-    modifier approved(address _user) {
-        require(_user != address(this), "ZirconPair: Can't remove approval of self");
-        require(_user != address(0), "ZirconPair: Can't remove approval of zero");
-        require(zirconApprovedUsers[msg.sender] == true, "Zircon: Unauthorized");
-        _;
-    }
-
-    function addApprovedUser(address _user) external approved(_user) onlyZircon {
-        zirconApprovedUsers[_user] = true;
-        emit UserAdded(_user);
-    }
-
-    function removeApprovedUser(address _user) external approved(_user) onlyZircon {
-        require(zirconApprovedUsers[_user] == true, "ZirconPair: User not approved");
-        zirconApprovedUsers[_user] = false;
-        emit UserRemoved(_user);
-    }
-}
-
-contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change does not affect ABI
+contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affect ABI
     using SafeMath for uint;
     using UQ112x112 for uint224;
 
@@ -116,8 +116,8 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
 
     constructor() public {
         factory = msg.sender;
-        zirconApprovedUsers[factory] = true;
-        zirconApprovedUsers[tx.origin] = true; //TODO: Remove this, only for testing purpose
+//        zirconApprovedUsers[factory] = true;
+//        zirconApprovedUsers[tx.origin] = true; //TODO: Remove this, only for testing purpose
     }
 
 
@@ -126,31 +126,31 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20, Approved { //Name change doe
     function tryLock() external lock {}
 
     //Privileged function used for certain Pylon vault operations and fee payment in ZRN
-    function swapNoFee(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock onlyZircon {
-        require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
-
-        uint balance0;
-        uint balance1;
-        { // scope for _token{0,1}, avoids stack too deep errors
-            address _token0 = token0;
-            address _token1 = token1;
-            require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
-            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-            if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
-            balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
-            balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
-        }
-//        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
-//        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
-//        require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
-        require(balance0.mul(balance1) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
-
-        _update(balance0, balance1, _reserve0, _reserve1);
-        emit SwapNoFee(msg.sender, amount0Out, amount1Out, to);
-    }
+//    function swapNoFee(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock onlyZircon {
+//        require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
+//        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
+//        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+//
+//        uint balance0;
+//        uint balance1;
+//        { // scope for _token{0,1}, avoids stack too deep errors
+//            address _token0 = token0;
+//            address _token1 = token1;
+//            require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
+//            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
+//            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+//            if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
+//            balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
+//            balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
+//        }
+////        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
+////        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
+////        require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
+//        require(balance0.mul(balance1) >= uint(_reserve0).mul(_reserve1), 'UniswapV2: K');
+//
+//        _update(balance0, balance1, _reserve0, _reserve1);
+//        emit SwapNoFee(msg.sender, amount0Out, amount1Out, to);
+//    }
 
     //--------------------------------------------------------
     //-------------------Close Zircon Diff--------------------
