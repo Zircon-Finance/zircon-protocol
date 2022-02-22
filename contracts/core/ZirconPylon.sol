@@ -688,7 +688,7 @@ contract ZirconPylon {
                 //Note that in practice this system doesn't activate unless the syncReserves are empty.
                 //Also note that a dump of 60% only generates about 10% of slashing.
 
-                 omegaMulDecimals = ZirconLibrary.slashLiability(
+                 omegaMulDecimals = ZirconLibrary.slashLiabilityOmega(
                         translateToPylon(pairReserves1.mul(2)),
                         reserveAnchor,
                         gammaMulDecimals,
