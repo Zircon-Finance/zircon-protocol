@@ -482,8 +482,8 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, token0Amount)
         await pylonInstance.mintAsync100(account.address, true);
         // Let's check...
-        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("90914118768158624"))
-        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1002066666469537048'))
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("203703043451779150218"))
+        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('531443972357505881191'))
     });
 
 })
