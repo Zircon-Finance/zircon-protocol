@@ -432,6 +432,7 @@ describe("Pylon", () => {
 
     // TODO: Recheck extraction results, are quite low
     it('should burn anchor liquidity', async function () {
+        console.log("Beginning anchor burn test");
         console.log(await token0.balanceOf(account2.address))
         console.log(await token1.balanceOf(account2.address))
         let token1Amount = expandTo18Decimals(  10)
@@ -440,27 +441,45 @@ describe("Pylon", () => {
         let floatSum = token0Amount.div(11)
         let anchorSum = token1Amount.div(220).add(token1Amount.div(11))
 
+        //Pylon init with 1/11 of token amounts into pylon.
         await init(token0Amount, token1Amount)
+
+
+        // Minting some float/anchor tokens (1/20 of Pylon)
         await token1.transfer(pylonInstance.address, token1Amount.div(220))
-        // Minting some float/anchor tokens
+        console.log("Anchors sent for minting: ", token1Amount.div(220))
+        let initialPTS = await poolTokenInstance1.balanceOf(account.address);
+        console.log("initialPTS: ", initialPTS);
         await pylonInstance.mintPoolTokens(account.address, true);
 
-        let ptb = await poolTokenInstance1.balanceOf(account.address)
-        await poolTokenInstance1.transfer(pylonInstance.address, ptb)
-        await pylonInstance.burn(account2.address, true)
-        console.log("float", floatSum)
-        console.log("anchor", anchorSum)
-        console.log("float", await token0.balanceOf(account2.address))
-        console.log("anchor", await token1.balanceOf(account2.address))
 
+
+        //Initiating burn. This burns the 1/20 of Anchors sent before.
+        let ptb = await poolTokenInstance1.balanceOf(account.address);
+
+        console.log("ptb: ", ptb);
+
+        let liquidityMinted = ptb.sub(initialPTS);
+        console.log("liquidityMinted: ", liquidityMinted);
+        await poolTokenInstance1.transfer(pylonInstance.address, liquidityMinted)
+        await pylonInstance.burn(account2.address, true) //Burns to an account2
+
+
+        console.log("initialFloat", floatSum)
+        console.log("initialAnchor", anchorSum)
+        console.log("floatBalance (should be 0)", await token0.balanceOf(account2.address))
+        console.log("anchorBalance (should be roughly 1/20 of token1 minus fees and slippage)", await token1.balanceOf(account2.address))
+
+
+        //Burns half of the floats now
         let ftb = await poolTokenInstance0.balanceOf(account.address)
-        await poolTokenInstance0.transfer(pylonInstance.address, ftb)
+        await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
 
         await pylonInstance.burn(account2.address, false)
-        console.log("float", floatSum)
-        console.log("anchor", anchorSum)
-        console.log("float", await token0.balanceOf(account2.address))
-        console.log("anchor", await token1.balanceOf(account2.address))
+        console.log("Burn tests complete\ninitialFloat", floatSum)
+        console.log("initialAnchor", anchorSum)
+        console.log("Account2 Float (1/20 of token1 minus slippage)", await token0.balanceOf(account2.address))
+        console.log("Account2 Anchor (same as before)", await token1.balanceOf(account2.address))
 
 
         // expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
