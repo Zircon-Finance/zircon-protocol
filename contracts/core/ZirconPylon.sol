@@ -439,8 +439,12 @@ contract ZirconPylon {
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         console.log("Mint Async gamma before sync::: ", gammaMulDecimals/testMultiplier);
         sync();
+<<<<<<< HEAD
         console.log("Mint Async gamma after::: ", gammaMulDecimals/testMultiplier);
         address feeTo = IUniswapV2Factory(pairFactory).feeTo();
+=======
+        console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
+>>>>>>> ae48501ef0c64d2b395dcb1287ed8268a87e2d17
         address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
 
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
