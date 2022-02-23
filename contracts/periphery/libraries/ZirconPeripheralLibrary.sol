@@ -2,7 +2,6 @@ pragma solidity >=0.6.6;
 
 import "./SafeMath.sol";
 import "../../core/interfaces/IZirconPylon.sol";
-import "hardhat/console.sol";
 
 library ZirconPeripheralLibrary {
     using SafeMath for uint256;
@@ -13,7 +12,7 @@ library ZirconPeripheralLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(tokenA, tokenB, pair)),
-                hex'99e0034afde5d5dfacb0abc060c5f76883e242a7a758e36e151b0191d7794c98' // init code hash
+                hex'e5ca5599c439d733784119abd50c06deefb4e85de6aa5b191c19b3099d2e9785' // init code hash
             ))));
     }
 
@@ -30,6 +29,8 @@ library ZirconPeripheralLibrary {
         (reserveF, reserveA,) = IZirconPylon(pylonFor(factory, tokenA, tokenB, pair)).getSyncReserves();
     }
 
+
+    // TODO: Change this
     // fetches and sorts the reserves for a pair
     function maximumSync(uint reserve, uint reservePylon, uint syncPercentage, uint maxBase, uint ptt, uint ptb) external pure returns (uint maximum) {
         uint pairReserveTranslated = translate(reserve, ptt, ptb);

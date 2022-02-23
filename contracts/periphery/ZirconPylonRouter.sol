@@ -115,17 +115,17 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     }
 
     // **** ADD SYNC LIQUIDITY ****
-    function getMax(uint reserve, uint reservePylon, address pair, address pylonAddress, bool isAnchor) internal returns (uint max) {
-        IZirconPair zp = IZirconPair(pair);
-        IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
-        max = ZirconPeripheralLibrary.maximumSync(
-            reserve,
-            reservePylon,
-            pf.maximumPercentageSync(),
-            isAnchor ? pf.maxAnchor() : pf.maxFloat(),
-            zp.totalSupply(),
-            zp.balanceOf(pylonAddress));
-    }
+//    function getMax(uint reserve, uint reservePylon, address pair, address pylonAddress, bool isAnchor) internal returns (uint max) {
+//        IZirconPair zp = IZirconPair(pair);
+//        IZirconPylonFactory pf = IZirconPylonFactory(pylonFactory);
+//        max = ZirconPeripheralLibrary.maximumSync(
+//            reserve,
+//            reservePylon,
+//            pf.maximumPercentageSync(),
+//            zp.totalSupply(),
+//            zp.balanceOf(pylonAddress));
+//    }
+
     function _addSyncLiquidity(
         address tokenA,
         address tokenB,
@@ -138,12 +138,12 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         (uint reservePairA, uint reservePairB) = ZirconPeripheralLibrary.getSyncReserves(pylonFactory, tokenA, tokenB, pair);
         address pylonAddress = ZirconPeripheralLibrary.pylonFor(pylonFactory, tokenA, tokenB, pair);
 
-        require(amountDesired <= getMax(isAnchor ? reserveA: reserveB,
-            isAnchor ? reservePairA: reservePairB,
-            pair,
-            pylonAddress,
-            isAnchor
-        ), "ZPRouter: EXCEEDS_MAX_SYNC");
+//        require(amountDesired <= getMax(isAnchor ? reserveA: reserveB,
+//            isAnchor ? reservePairA: reservePairB,
+//            pair,
+//            pylonAddress,
+//            isAnchor
+//        ), "ZPRouter: EXCEEDS_MAX_SYNC");
 
         amount = amountDesired;
     }

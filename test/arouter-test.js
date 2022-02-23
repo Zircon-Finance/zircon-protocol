@@ -88,8 +88,8 @@
 //         let ptInstance1 = poolToken2.attach(poolAddress1);
 //
 //         // Let''s check that everything was correctly minted....
-//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1000000000000000000'))
-//         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2000000000000000000'))
+//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('999999999999999000'))
+//         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1999999999999999000'))
 //         expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('50000000000000000'))
 //         expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('1343502884254439296'))
 //     });
@@ -123,7 +123,7 @@
 //             true,
 //             account.address,
 //             ethers.constants.MaxUint256);
-//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
+//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2044999999999998929'))
 //     });
 //
 //     it('should add sync liquidity ETH', async function () {
@@ -160,7 +160,7 @@
 //         let ptInstance1 = poolToken2.attach(poolAddress1);
 //
 //         // Let''s check that everything was correctly minted....
-//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1000000000000000000'))
+//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('999999999999999000'))
 //         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2042857142857142780'))
 //         expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('47499999999999964'))
 //         expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('1347038418160372084'))
@@ -183,7 +183,7 @@
 //             true,
 //             account.address,
 //             ethers.constants.MaxUint256);
-//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
+//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2044341478829554712'))
 //     });
 //
 //     it('should add async-100 liquidity ETH', async function () {
@@ -220,7 +220,7 @@
 //         let ptInstance1 = poolToken2.attach(poolAddress1);
 //
 //         // Let''s check that everything was correctly minted....
-//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1000000000000000000'))
+//         expect(await ptInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('999999999999999000'))
 //         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2042857142857142780'))
 //         expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('50000000000000000'))
 //         expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('1343502884254439296'))
@@ -246,7 +246,7 @@
 //             true,
 //             account.address,
 //             ethers.constants.MaxUint256);
-//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022999999999999950'))
+//         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('2045999999999998856'))
 //     });
 //
 //     it('should add async liquidity ETH', async function () {
@@ -262,7 +262,7 @@
 //
 //         await router.addAsyncLiquidityETH(
 //             token0.address,
-//             ethers.BigNumber.from('44999999999999929'),
+//             ethers.BigNumber.from('1022999999999998928'),
 //             ethers.BigNumber.from('22999999999999929'),
 //             ethers.BigNumber.from('11499999999999964'),
 //             ethers.BigNumber.from('20999999999999929'),
