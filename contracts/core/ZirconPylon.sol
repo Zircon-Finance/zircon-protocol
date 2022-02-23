@@ -435,7 +435,6 @@ contract ZirconPylon {
         console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
         sync();
         console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
-        address feeTo = IUniswapV2Factory(pairFactory).feeTo();
         address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
 
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
