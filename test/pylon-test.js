@@ -55,11 +55,11 @@ describe("Pylon", () => {
     // Let's try to calculate some cases for pylon
     //TODO: recheck the values, they are way to similar
     const mintTestCases = [
-        [5, 10, '4749999999999999', '4749999999999999','10450000000000044','500000000000000010', false],
-        [10, 5, '4749999999999999', '4749999999999999','500000000000000007', '1900000000000000897', true],
-        [5, 10, '2374999999999999', '9499999999999999','4750000000000000', '1900000000000000898', true],
-        [10, 10, '9500000000000000', '4750000000000000','10450000000000044', '1000000000000000000', false],
-        [1000, 1000, '475000000000000000', '950000000000000000','10000000000000000', '1900000000000000899', true],
+        [5, 10, '4749999999999999', '4749999999999999','149999999999999002','99999999999999000', false],
+        [10, 5, '4749999999999999', '4749999999999999','99999999999999000', '83333333333332333', true],
+        [5, 10, '2374999999999999', '9499999999999999','49999999999999000', '133333333333332333', true],
+        [10, 10, '9500000000000000', '4750000000000000','199999999999999000', '99999999999999000', false],
+        [1000, 1000, '475000000000000000', '950000000000000000','9999999999999999000', '14999999999999999000', true],
     ].map(a => a.map(n => (typeof n  === "boolean" ? n : typeof n === 'string' ? ethers.BigNumber.from(n) : expandTo18Decimals(n))))
     mintTestCases.forEach((mintCase, i) => {
         it(`mintPylon:${i}`, async () => {
@@ -73,8 +73,8 @@ describe("Pylon", () => {
             // Let's start the pylon
             await pylonInstance.initPylon(account.address)
             // Transferring some liquidity to pylon
-            let pylonRes = await pylonInstance.getSyncReserves()
-            let pairRes = await pair.getReserves()
+            // let pylonRes = await pylonInstance.getSyncReserves()
+            // let pairRes = await pair.getReserves()
 
             if (isAnchor) {
                 let t = token0Amount.div(100)
@@ -97,21 +97,21 @@ describe("Pylon", () => {
         })
     })  // Let's try to calculate some cases for pylon
 
-    it('Sync LP Should fail exceeding max', async function () {
-        await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
-        await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300))
-        // Minting some float/anchor tokens
-        await expect(pylonInstance.mintPoolTokens(account.address, true)).to.be.revertedWith(
-            "ZP: Exceeds"
-        )
-    });
+    // it('Sync LP Should fail exceeding max', async function () {
+    //     await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
+    //     await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300))
+    //     // Minting some float/anchor tokens
+    //     await expect(pylonInstance.mintPoolTokens(account.address, true)).to.be.revertedWith(
+    //         "ZP: Exceeds"
+    //     )
+    // });
 
     it('should add float/anchor liquidity', async function () {
         // Adding some tokens and minting
         // here we initially the pool
         await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
-        // Let's check if pair tokens and poolToken have been given correctly...
-        assert((await pair.balanceOf(pylonInstance.address)).eq(ethers.BigNumber.from("122795435616575190394")) )
+        // Let's check if pair tokens and poolToken have b000een given correctly...
+        expect(await pair.balanceOf(pylonInstance.address)).to.eq(ethers.BigNumber.from("122795435616575190394"))
         // On init the tokens sent to the pylon exceeds maxSync
         // So we have less tokens
         // We donated some tokens to the pylon over there
