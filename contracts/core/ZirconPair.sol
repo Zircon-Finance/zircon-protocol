@@ -295,9 +295,9 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
             amount = amount0;
             require(amount < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
-            console.log("amount0", amount1);
+            console.log("amount1", amount1);
             amount1 += ZirconLibrary.getAmountOut(amount0, _reserve0 - amount0, _reserve1 - amount1);
-            console.log("amount0", amount1);
+            console.log("amount1", amount1);
             amount = amount1;
             require(amount < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }

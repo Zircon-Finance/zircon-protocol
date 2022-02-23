@@ -289,14 +289,6 @@ contract ZirconPylon {
 
         require(amountIn > 0, "ZP: Not Enough Liquidity");
         uint pts = IZirconPoolToken(_poolTokenAddress).totalSupply();
-        if(pts != 0){
-            // When pts is null we don't update @vab and @vfb because in the init are already updated
-            if(isAnchor) {
-                virtualAnchorBalance += amountIn;
-            }else{
-                virtualFloatBalance += amountIn;
-            }
-        }
         {
             // TODO: Clean up this to avoid using hardcoded values
             uint pylonReserve = _pylonReserve;
@@ -327,6 +319,16 @@ contract ZirconPylon {
 //            console.log("<<<_mintPoolToken: liquidity to mint: ", liquidity/testMultiplier);
 
         }
+
+        if(pts != 0){
+            // When pts is null we don't update @vab and @vfb because in the init are already updated
+            if(isAnchor) {
+                virtualAnchorBalance += amountIn;
+            }else{
+                virtualFloatBalance += amountIn;
+            }
+        }
+
         uint fee = liquidity.mul(dynamicFeePercentage)/100;
         if(_mintFee(fee, _poolTokenAddress)) {
             liquidity -= fee;
@@ -668,6 +670,8 @@ contract ZirconPylon {
             (uint reservePT, uint _amount) = preBurn(isAnchor, _totalSupply, liquidity);
             _safeTransfer(isAnchor ? _pylonToken.anchor : _pylonToken.float, to, _amount);
 
+            console.log("burn: reservePT, reserveAmount: ", reservePT, _amount);
+
             amount = _amount;
 
             uint omegaMulDecimals = 1e18;
@@ -690,18 +694,20 @@ contract ZirconPylon {
             }
 
             console.log("<<<<omegaMulDecimals", omegaMulDecimals);
+            console.log("burn: total vfb: ", virtualFloatBalance);
 
             if (reservePT < liquidity) {
                 uint adjustedLiquidity = ((liquidity.sub(reservePT)).mul(omegaMulDecimals))/1e18;
                 _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, adjustedLiquidity, _totalSupply));
                 amount += IZirconPair(_pairAddress).burnOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);  // XOR
+
                 //Bool combines choice of anchor or float with which token is which in the pool
             }
 
             pt.burn(address(this), liquidity); //Should burn unadjusted amount ofc
             console.log("<<<<liquidity", liquidity);
         }
-        console.log("amount", amount);
+        console.log("burn: Final amount", amount);
         if(_isAnchor) {
             virtualAnchorBalance -= amount;
         }else{
