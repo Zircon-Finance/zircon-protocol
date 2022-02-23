@@ -422,12 +422,16 @@ describe("Pylon", () => {
         expect(vfb3).to.eq(ethers.BigNumber.from('947728772470068004'))
         expect(vab3).to.eq(ethers.BigNumber.from('9394220164340522812'))
 
+
+        console.log("Sync3 Transferring newAmount0 for Async:", newAmount0)
         await token0.transfer(pylonInstance.address, newAmount0)
         await token1.transfer(pylonInstance.address, newAmount0)
         await pylonInstance.mintAsync(account.address, true)
 
+
+        console.log("Sync3 Transferring newAmount0 for Sync:", newAmount0)
         await token0.transfer(pylonInstance.address, newAmount0)
-        await pylonInstance.mintPoolTokens(account.address, false)
+        await pylonInstance.mintPoolTokens(account.address, true)
     })
 
     // TODO: Recheck extraction results, are quite low
