@@ -61,7 +61,7 @@ library ZirconLibrary {
         if (_isAnchor) {
             amount = _vab.mul(_ptuAmount)/_totalSupply;
         } else {
-            amount = ((_reserve0.mul(_gamma).mul(2)/1e18).add(_reservePylon0)).mul(_ptuAmount)/_totalSupply;
+            amount = (((_reserve0.mul(_gamma).mul(2)/1e18).add(_reservePylon0)).mul(_ptuAmount))/_totalSupply;
         }
     }
 
