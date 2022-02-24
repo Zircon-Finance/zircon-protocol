@@ -434,7 +434,6 @@ describe("Pylon", () => {
         await pylonInstance.mintPoolTokens(account.address, true)
     })
 
-    // TODO: Recheck extraction results, are quite low
     it('should burn anchor liquidity', async function () {
         console.log("Beginning anchor burn test");
         console.log(await token0.balanceOf(account2.address))
@@ -496,17 +495,19 @@ describe("Pylon", () => {
         // Minting some float/anchor tokens
         await pylonInstance.mintPoolTokens(account.address, true);
         let ptb = await poolTokenInstance1.balanceOf(account.address)
-        await poolTokenInstance1.transfer(pylonInstance.address, ptb)
+        await poolTokenInstance1.transfer(pylonInstance.address, ptb.div(2))
         await pylonInstance.burnAsync(account2.address, true)
 
-        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("238089716406042708"))
-        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("477272727272726814"))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("108500033268696893"))
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("217045454545454317"))
 
+        //Anchor burn is a bit sussy but mostly right (amounts are a weird percentage but close to what you'd expect. Maybe it's the fee?)
 
         let ftb = await poolTokenInstance0.balanceOf(account.address)
-        await poolTokenInstance0.transfer(pylonInstance.address, ftb)
+        await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
         await pylonInstance.burnAsync(account2.address, false)
 
+        //Float burn is fucked because we reduce vfb too much, need to adjust it by the share of float tokens you're withdrawing.
 
         expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("346317585475747434"))
         expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("694225441642470958"))

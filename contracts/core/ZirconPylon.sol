@@ -439,12 +439,9 @@ contract ZirconPylon {
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         console.log("Mint Async gamma before sync::: ", gammaMulDecimals/testMultiplier);
         sync();
-<<<<<<< HEAD
         console.log("Mint Async gamma after::: ", gammaMulDecimals/testMultiplier);
         address feeTo = IUniswapV2Factory(pairFactory).feeTo();
-=======
         console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
->>>>>>> ae48501ef0c64d2b395dcb1287ed8268a87e2d17
         address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
 
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
@@ -632,27 +629,42 @@ contract ZirconPylon {
     require(claim > 0, 'ZP: INSUFFICIENT_LIQUIDITY_BURNED');
     }
 
-    // Burn Async send both tokens 50-50
-    // Liquidity has to be sent before
-    //    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
-    //        sync();
-    //
-    //        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
-    //        uint liquidity = pt.balanceOf(address(this));
-    //        require(liquidity > 0, "ZP: Not enough liquidity inserted");
-    //        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
-    //        console.log("PTU", ptu);
-    //        console.log("PTB", IZirconPair(pairAddress).balanceOf(address(this)));
-    //
-    //        _safeTransfer(pairAddress, pairAddress, ptu);
-    //        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
-    //        amount0 = isFloatReserve0 ? amountA : amountB;
-    //        amount1 = isFloatReserve0 ? amountB : amountA;
-    //        virtualAnchorBalance -= amount0;
-    //        virtualFloatBalance -= amount1;
-    //        emit BurnAsync(msg.sender, amount0, amount1);
-    //
-    //    }
+     //Burn Async send both tokens 50-50
+     //Liquidity has to be sent before
+    function burnAsync(address _to, bool _isAnchor) external lock returns (uint amount0, uint amount1){
+        sync();
+
+        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
+        uint liquidity = pt.balanceOf(address(this));
+        console.log("burnAsync liquidity & Zircon pool token supply", liquidity, pt.totalSupply());
+        require(liquidity > 0, "ZP: Not enough liquidity inserted");
+        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
+        console.log("BurnAsync: PTU", ptu);
+        console.log("BurnAsync: PTB", IZirconPair(pairAddress).balanceOf(address(this)));
+
+        _safeTransfer(pairAddress, pairAddress, ptu);
+        (uint amountA, uint amountB) = IZirconPair(pairAddress).burn(_to);
+        amount0 = isFloatReserve0 ? amountA : amountB;
+        amount1 = isFloatReserve0 ? amountB : amountA;
+
+        //Can just multiply because the Uni function assures 50/50 extraction
+
+        if(_isAnchor) {
+            console.log("BurnAsync Anchor, oldVAB & reductionAmount: ", virtualAnchorBalance, amount0.mul(2));
+            virtualAnchorBalance -= amount0.mul(2);
+        } else {
+
+            //Todo: VfB gets reduced too much because gamma * TPV is actually more than vfb. Need to adjust it by how much it's extra over vfb
+            //TODO: And probably do the same for the other burn.
+            console.log("BurnAsync Float, oldVfB & reductionAmount: ", virtualFloatBalance, amount1.mul(2));
+            virtualFloatBalance -= amount1.mul(2);
+        }
+
+
+        //Todo: Should we do the update variables thingy?
+        emit BurnAsync(msg.sender, amount0, amount1);
+
+    }
 
     // Function That calculates the amount of reserves in PTU
     // and the amount of the minimum from liquidity and reserves
