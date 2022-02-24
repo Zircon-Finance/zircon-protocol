@@ -49,10 +49,8 @@ async function deploy() {
     // Deploy Pylon Factory
 
     const pylonFactory = await ethers.getContractFactory('ZirconPylonFactory');
-    let factoryPylonInstance = await pylonFactory.deploy(ethers.BigNumber.from("10000000000000000000"), ethers.BigNumber.from("8000000000000000000"),
-        factoryInstance.address);
+    let factoryPylonInstance = await pylonFactory.deploy(factoryInstance.address);
     console.log(`Pylon Factory deployed to : ${factoryPylonInstance.address}`);
-
     // Deploy Pylon Router
     let peripheralLibrary = await (await ethers.getContractFactory('ZirconPeripheralLibrary')).deploy();
     let pylonRouterContract = await ethers.getContractFactory('ZirconPylonRouter', {
