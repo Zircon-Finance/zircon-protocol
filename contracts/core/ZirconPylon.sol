@@ -439,9 +439,9 @@ contract ZirconPylon {
     function mintAsync(address to, bool shouldMintAnchor) external lock isInitialized returns (uint liquidity){
         console.log("Mint Async gamma before sync::: ", gammaMulDecimals/testMultiplier);
         sync();
-        console.log("Mint Async gamma after::: ", gammaMulDecimals/testMultiplier);
+//        console.log("Mint Async gamma after::: ", gammaMulDecimals/testMultiplier);
         address feeTo = IUniswapV2Factory(pairFactory).feeTo();
-        console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
+//        console.log("Mint Async::: ", gammaMulDecimals/testMultiplier);
         address _poolTokenAddress = shouldMintAnchor ? anchorPoolToken : floatPoolToken;
 
         (uint112 _reserve0, uint112 _reserve1,) = getSyncReserves(); // gas savings
@@ -450,23 +450,23 @@ contract ZirconPylon {
         {
             uint balance0 = IERC20Uniswap(pylonToken.float).balanceOf(address(this));
             uint balance1 = IERC20Uniswap(pylonToken.anchor).balanceOf(address(this));
-            console.log("<<<Pylon:float balance & syncReserve::::::::", balance0/testMultiplier, reserve0/testMultiplier);
-            console.log("<<<Pylon:anchor balance & syncReserve::::::::", balance1/testMultiplier, reserve1/testMultiplier);
+//            console.log("<<<Pylon:float balance & syncReserve::::::::", balance0/testMultiplier, reserve0/testMultiplier);
+//            console.log("<<<Pylon:anchor balance & syncReserve::::::::", balance1/testMultiplier, reserve1/testMultiplier);
             amountIn0 = balance0.sub(_reserve0);
             amountIn1 = balance1.sub(_reserve1);
-            console.log("<<<Pylon:amount in 0 and 1::::::::", amountIn0, amountIn1);
+//            console.log("<<<Pylon:amount in 0 and 1::::::::", amountIn0, amountIn1);
             liquidity = getLiquidityFromPoolTokens(amountIn0, amountIn1, shouldMintAnchor, IZirconPoolToken(_poolTokenAddress));
-            console.log("Mint Async liquidity::: ", liquidity);
-            console.log("Mint Async total pool tokens::: ", IZirconPoolToken(_poolTokenAddress).totalSupply()/testMultiplier);
+//            console.log("Mint Async liquidity::: ", liquidity);
+//            console.log("Mint Async total pool tokens::: ", IZirconPoolToken(_poolTokenAddress).totalSupply()/testMultiplier);
 
         }
 
         require(amountIn1 > 0 && amountIn0 > 0, "ZirconPylon: Not Enough Liquidity");
         _safeTransfer(pylonToken.float, pairAddress, amountIn0);
         _safeTransfer(pylonToken.anchor, pairAddress, amountIn1);
-        console.log("Mint Async total Uni V2 liquidity::: ", IZirconPair(pairAddress).totalSupply());
+        //console.log("Mint Async total Uni V2 liquidity::: ", IZirconPair(pairAddress).totalSupply());
         (uint l) = IZirconPair(pairAddress).mint(address(this));
-        console.log("Mint Async minted Uni V2 liquidity::: ", l);
+        //console.log("Mint Async minted Uni V2 liquidity::: ", l);
 
 
         // uint deltaSupply = pair.totalSupply().sub(_totalSupply);
@@ -504,10 +504,10 @@ contract ZirconPylon {
         // If the current K is equal to the last K, means that we haven't had any updates on the pair level
         // So is useless to update any variable because fees on pair haven't changed
         uint currentK = uint(pairReserve0).mul(pairReserve1);
-        console.log("<<<Pylon:sync()::::::::pairReserve0: ", pairReserve0, pylonReserve0); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
-        console.log("<<<Pylon:sync()::::::::pairReserve1: ", pairReserve1, pylonReserve1); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
-        console.log("<<<Pylon:sync()::::::::currentK: ", currentK); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
-        console.log("<<<Pylon:sync()::::::::lastK: ", lastK);
+//        console.log("<<<Pylon:sync()::::::::pairReserve0: ", pairReserve0, pylonReserve0); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
+//        console.log("<<<Pylon:sync()::::::::pairReserve1: ", pairReserve1, pylonReserve1); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
+//        console.log("<<<Pylon:sync()::::::::currentK: ", currentK); //" pairReserve1: ", pairReserve1, " currentK: ", currentK, "lastK: ", lastK);
+//        console.log("<<<Pylon:sync()::::::::lastK: ", lastK);
 
         //  && lastK < currentK
         if (lastPoolTokens != 0 && pairReserve0 != 0 && pairReserve1 != 0) {
@@ -550,23 +550,23 @@ contract ZirconPylon {
             //When operating on fractional, gamma is higher than it should be compared to ftv + atv.
             //This means that anchors get more fees than they "should", which kinda works out because they're at high risk.
             //It works as an additional incentive to not withdraw.
-            console.log("<<<sync(): vab: ", virtualAnchorBalance);
-            console.log("<<<sync(): vfb: ", virtualFloatBalance);
+//            console.log("<<<sync(): vab: ", virtualAnchorBalance);
+//            console.log("<<<sync(): vfb: ", virtualFloatBalance);
             virtualAnchorBalance += ((feeValueAnchor.mul(gammaMulDecimals))/1e18);
 
 
 
             virtualFloatBalance += ((1e18-gammaMulDecimals).mul(feeValueFloat)/1e18);
 
-            console.log("<<<sync(): lastPoolTokens: ", lastPoolTokens);
-            console.log("<<<sync(): feeA: ", feeValueAnchor);
-            console.log("<<<sync(): feeF: ", feeValueFloat);
-            console.log("<<<sync(): ptt: ", IZirconPair(pairAddress).totalSupply());
-            console.log("<<<sync(): ptb: ", IZirconPair(pairAddress).balanceOf(address(this)));
-            console.log("<<<sync(): att: ", IZirconPoolToken(anchorPoolToken).totalSupply());
-            console.log("<<<sync(): ftt: ", IZirconPoolToken(floatPoolToken).totalSupply());
-            console.log("<<<sync(): vab: ", virtualAnchorBalance);
-            console.log("<<<sync(): vfb: ", virtualFloatBalance);
+//            console.log("<<<sync(): lastPoolTokens: ", lastPoolTokens);
+//            console.log("<<<sync(): feeA: ", feeValueAnchor);
+//            console.log("<<<sync(): feeF: ", feeValueFloat);
+//            console.log("<<<sync(): ptt: ", IZirconPair(pairAddress).totalSupply());
+//            console.log("<<<sync(): ptb: ", IZirconPair(pairAddress).balanceOf(address(this)));
+//            console.log("<<<sync(): att: ", IZirconPoolToken(anchorPoolToken).totalSupply());
+//            console.log("<<<sync(): ftt: ", IZirconPoolToken(floatPoolToken).totalSupply());
+//            console.log("<<<sync(): vab: ", virtualAnchorBalance);
+//            console.log("<<<sync(): vfb: ", virtualFloatBalance);
 //            console.log("<<<sync(): TPVFloatPrime: ", totalPoolValueFloatPrime);
 //            console.log("<<<sync(): TPVAnchorPrime: ", totalPoolValueAnchorPrime    );
 //            console.log("<<<sync(): Price of Float: ", (pairReserve1*1e18/pairReserve0));
@@ -598,7 +598,6 @@ contract ZirconPylon {
         console.log("<<<Pylon:sync::::::::end\n\n");
     }
 
-    // TODO: sistema di slashing, not withdraw more than a total
     function calculateLPTU(bool _isAnchor, uint _liquidity, uint _ptTotalSupply) view private returns (uint claim){
         (, uint112 _reserve1) = getPairReservesNormalized(); // gas savings
         (, uint112 _pylonReserve1,) = getSyncReserves(); // gas savings
@@ -621,10 +620,10 @@ contract ZirconPylon {
             // TODO: gamma > 0.5
             pylonShare = ((gammaMulDecimals).mul(IZirconPair(pairAddress).balanceOf(address(this))))/1e18;
         }
-        console.log("<<<<claim", _liquidity);
+        //console.log("<<<<claim", _liquidity);
 
         claim = (_liquidity.mul(pylonShare))/_ptTotalSupply;
-        console.log("<<<<claim", claim);
+        //console.log("<<<<claim", claim);
 
     require(claim > 0, 'ZP: INSUFFICIENT_LIQUIDITY_BURNED');
     }
@@ -636,9 +635,38 @@ contract ZirconPylon {
 
         IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
         uint liquidity = pt.balanceOf(address(this));
-        console.log("burnAsync liquidity & Zircon pool token supply", liquidity, pt.totalSupply());
+        uint ptTotalSupply = pt.totalSupply();
+        //console.log("burnAsync liquidity & Zircon pool token supply", liquidity, pt.totalSupply());
         require(liquidity > 0, "ZP: Not enough liquidity inserted");
-        uint ptu = calculateLPTU(_isAnchor, liquidity, pt.totalSupply());
+
+
+        //Anchor slashing logic
+        uint omegaMulDecimals = 1e18;
+
+        if (_isAnchor) {
+
+
+            (, uint reserveAnchor,) = getSyncReserves();
+            (, uint pairReserves1)  = getPairReservesNormalized();
+
+            //Omega is the slashing factor. It's always equal to 1 if pool has gamma above 50%
+            //If it's below 50%, it begins to go below 1 and thus slash any withdrawal.
+            //Note that in practice this system doesn't activate unless the syncReserves are empty.
+            //Also note that a dump of 60% only generates about 10% of slashing.
+            //console.log("<<<<translateToPylon", translateToPylon(pairReserves1.mul(2), 0));
+
+            omegaMulDecimals = ZirconLibrary.slashLiabilityOmega(
+                translateToPylon(pairReserves1.mul(2), 0),
+                reserveAnchor,
+                gammaMulDecimals,
+                virtualAnchorBalance);
+        }
+
+
+        uint adjustedLiquidity = liquidity.mul(omegaMulDecimals)/1e18;
+
+
+        uint ptu = calculateLPTU(_isAnchor, adjustedLiquidity, ptTotalSupply);
         console.log("BurnAsync: PTU", ptu);
         console.log("BurnAsync: PTB", IZirconPair(pairAddress).balanceOf(address(this)));
 
@@ -647,18 +675,24 @@ contract ZirconPylon {
         amount0 = isFloatReserve0 ? amountA : amountB;
         amount1 = isFloatReserve0 ? amountB : amountA;
 
-        //Can just multiply because the Uni function assures 50/50 extraction
+
+        console.log("<<<<omegaMulDecimals", omegaMulDecimals);
 
         if(_isAnchor) {
-            console.log("BurnAsync Anchor, oldVAB & reductionAmount: ", virtualAnchorBalance, amount0.mul(2));
-            virtualAnchorBalance -= amount0.mul(2);
+
+            //console.log("BurnAsync Anchor, oldVAB & Amount: ", virtualAnchorBalance, amount0.mul(2));
+            virtualAnchorBalance -= virtualAnchorBalance.mul(liquidity)/ptTotalSupply;
+            //console.log("Burn async vab after reduction: ", virtualAnchorBalance);
         } else {
 
-            //Todo: VfB gets reduced too much because gamma * TPV is actually more than vfb. Need to adjust it by how much it's extra over vfb
-            //TODO: And probably do the same for the other burn.
-            console.log("BurnAsync Float, oldVfB & reductionAmount: ", virtualFloatBalance, amount1.mul(2));
-            virtualFloatBalance -= amount1.mul(2);
+            //We reduce vab and vfb proportionally to liquidity due to e.g. float share being higher than vfb
+            //console.log("BurnAsync Float, oldVfB & reductionAmount: ", virtualFloatBalance, amount1.mul(2));
+            virtualFloatBalance -= virtualFloatBalance.mul(liquidity)/ptTotalSupply;
+            //console.log("Burn async vfb after reduction: ", virtualFloatBalance);
         }
+
+        //Burns the Zircon pool tokens
+        pt.burn(address(this), liquidity);
 
 
         //Todo: Should we do the update variables thingy?
@@ -686,72 +720,76 @@ contract ZirconPylon {
     // Burn send liquidity back to user burning Pool tokens
     // The function first uses the reserves of the Pylon
     // If not enough reserves it burns The Pool Tokens of the pylon
-//    function burn(address _to, bool _isAnchor) external lock returns (uint amount){
-//        sync();
-//        // Selecting the Pool Token class on basis of the requested tranch to burn
-//        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
-//        {
-//            uint _totalSupply = pt.totalSupply();
-//            address to = _to;
-//            bool isAnchor = _isAnchor;
-//            PylonToken memory _pylonToken = pylonToken;
-//            address _pairAddress = pairAddress;
-//
-//            // Let's get how much liquidity was sent to burn
-//            uint liquidity = pt.balanceOf(address(this));
-//
-//
-//            // Here we calculate max PTU to extract sync reserve + amount in reserves
-//            (uint reservePT, uint _amount) = preBurn(isAnchor, _totalSupply, liquidity);
-//            _safeTransfer(isAnchor ? _pylonToken.anchor : _pylonToken.float, to, _amount);
-//
-//            console.log("burn: reservePT, reserveAmount: ", reservePT, _amount);
-//
-//            amount = _amount;
-//
-//            uint omegaMulDecimals = 1e18;
-//
-//            if (isAnchor) {
-//                (, uint reserveAnchor,) = getSyncReserves();
-//                (, uint pairReserves1)  = getPairReservesNormalized();
-//
-//                //Omega is the slashing factor. It's always equal to 1 if pool has gamma above 50%
-//                //If it's below 50%, it begins to go below 1 and thus slash any withdrawal.
-//                //Note that in practice this system doesn't activate unless the syncReserves are empty.
-//                //Also note that a dump of 60% only generates about 10% of slashing.
-//                console.log("<<<<translateToPylon", translateToPylon(pairReserves1.mul(2), 0));
-//
-//                 omegaMulDecimals = ZirconLibrary.slashLiabilityOmega(
-//                        translateToPylon(pairReserves1.mul(2), 0),
-//                        reserveAnchor,
-//                        gammaMulDecimals,
-//                        virtualAnchorBalance);
-//            }
-//
-//            console.log("<<<<omegaMulDecimals", omegaMulDecimals);
-//            console.log("burn: total vfb: ", virtualFloatBalance);
-//
-//            if (reservePT < liquidity) {
-//                uint adjustedLiquidity = ((liquidity.sub(reservePT)).mul(omegaMulDecimals))/1e18;
-//                _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, adjustedLiquidity, _totalSupply));
-//                amount += IZirconPair(_pairAddress).burnOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);  // XOR
-//
-//                //Bool combines choice of anchor or float with which token is which in the pool
-//            }
-//
-//            pt.burn(address(this), liquidity); //Should burn unadjusted amount ofc
-//            console.log("<<<<liquidity", liquidity);
-//        }
-//        console.log("burn: Final amount", amount);
-//        if(_isAnchor) {
-//            virtualAnchorBalance -= amount;
-//        }else{
-//            virtualFloatBalance -= amount;
-//        }
-//        console.log("<<<<extract end\n\n");
-//
-//        //TODO: This should probably be sync not update
-//        _update();
-//        emit Burn(msg.sender, amount);
-//    }
+    function burn(address _to, bool _isAnchor) external lock returns (uint amount){
+        sync();
+        // Selecting the Pool Token class on basis of the requested tranch to burn
+
+        IZirconPoolToken pt = IZirconPoolToken(_isAnchor ? anchorPoolToken : floatPoolToken);
+        // Let's get how much liquidity was sent to burn
+        //Outside of scope to be used for vab/vfb adjustment later
+        uint liquidity = pt.balanceOf(address(this));
+        uint initialPT = pt.totalSupply();
+        {
+            uint _totalSupply = pt.totalSupply();
+            address to = _to;
+            bool isAnchor = _isAnchor;
+            PylonToken memory _pylonToken = pylonToken;
+            address _pairAddress = pairAddress;
+
+
+
+            // Here we calculate max PTU to extract sync reserve + amount in reserves
+            (uint reservePT, uint _amount) = preBurn(isAnchor, _totalSupply, liquidity);
+            _safeTransfer(isAnchor ? _pylonToken.anchor : _pylonToken.float, to, _amount);
+
+            console.log("burn: reservePT, reserveAmount: ", reservePT, _amount);
+
+            amount = _amount;
+
+            uint omegaMulDecimals = 1e18;
+
+            if (isAnchor) {
+                (, uint reserveAnchor,) = getSyncReserves();
+                (, uint pairReserves1)  = getPairReservesNormalized();
+
+                //Omega is the slashing factor. It's always equal to 1 if pool has gamma above 50%
+                //If it's below 50%, it begins to go below 1 and thus slash any withdrawal.
+                //Note that in practice this system doesn't activate unless the syncReserves are empty.
+                //Also note that a dump of 60% only generates about 10% of slashing.
+                console.log("<<<<translateToPylon", translateToPylon(pairReserves1.mul(2), 0));
+
+                 omegaMulDecimals = ZirconLibrary.slashLiabilityOmega(
+                        translateToPylon(pairReserves1.mul(2), 0),
+                        reserveAnchor,
+                        gammaMulDecimals,
+                        virtualAnchorBalance);
+            }
+
+            console.log("<<<<omegaMulDecimals", omegaMulDecimals);
+            console.log("burn: total vfb: ", virtualFloatBalance);
+
+            if (reservePT < liquidity) {
+                uint adjustedLiquidity = ((liquidity.sub(reservePT)).mul(omegaMulDecimals))/1e18;
+                _safeTransfer(_pairAddress, _pairAddress, calculateLPTU(isAnchor, adjustedLiquidity, _totalSupply));
+                amount += IZirconPair(_pairAddress).burnOneSide(to, isFloatReserve0 ? !isAnchor : isAnchor);  // XOR
+
+                //Bool combines choice of anchor or float with which token is which in the pool
+            }
+
+            pt.burn(address(this), liquidity); //Should burn unadjusted amount ofc
+            console.log("<<<<liquidity", liquidity);
+        }
+        console.log("burn: Final amount", amount);
+
+        if(_isAnchor) {
+            virtualAnchorBalance -= virtualAnchorBalance.mul(liquidity)/initialPT;
+        }else{
+            virtualFloatBalance -= virtualFloatBalance.mul(liquidity)/initialPT;
+        }
+        console.log("<<<<extract end\n\n");
+
+        //TODO: This should probably be sync not update
+        _update();
+        emit Burn(msg.sender, amount);
+    }
 }
