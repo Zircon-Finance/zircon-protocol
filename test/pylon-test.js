@@ -424,9 +424,11 @@ describe("Pylon", () => {
 
 
         console.log("Sync3 Transferring newAmount0 for Async:", newAmount0)
-        await token0.transfer(pylonInstance.address, newAmount0)
-        await token1.transfer(pylonInstance.address, newAmount0)
-        await pylonInstance.mintAsync(account.address, true)
+        // await token0.transfer(pylonInstance.address, newAmount0)
+        // await token1.transfer(pylonInstance.address, newAmount0)
+        let ftb = await poolTokenInstance0.balanceOf(account.address)
+        await poolTokenInstance0.transfer(pylonInstance.address, ftb)
+        await pylonInstance.burnAsync(account2.address, false)
 
 
         console.log("Sync3 Transferring newAmount0 for Sync:", newAmount0)
