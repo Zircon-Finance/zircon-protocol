@@ -501,16 +501,14 @@ describe("Pylon", () => {
         await poolTokenInstance1.transfer(pylonInstance.address, ptb.div(2))
         await pylonInstance.burnAsync(account2.address, true)
 
-        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("108499249241477869"))
-        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("217043886163040022"))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("114877831817773856"))
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("229803719620411871"))
 
         //Anchor burn is a bit sussy but mostly right (amounts are a weird percentage but close to what you'd expect. Maybe it's the fee?)
 
         let ftb = await poolTokenInstance0.balanceOf(account.address)
         await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
         await pylonInstance.burnAsync(account2.address, false)
-
-        //Float burn is fucked because we reduce vfb too much, need to adjust it by the share of float tokens you're withdrawing.
 
         expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("222134092104868975"))
         expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("444361107904406377"))
