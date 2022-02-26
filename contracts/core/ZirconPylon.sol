@@ -803,8 +803,21 @@ contract ZirconPylon {
         }
         console.log("<<<<extract end\n\n");
 
-        //TODO: This should probably be sync not update
         _updateVariables();
+        {
+            PylonToken memory _pylonTokens = pylonToken;
+
+            uint balance0 = IERC20Uniswap(_pylonTokens.float).balanceOf(address(this));
+            uint balance1 = IERC20Uniswap(_pylonTokens.anchor).balanceOf(address(this));
+
+            (uint _pairReserve0, uint _pairReserve1) = getPairReservesNormalized();
+
+            uint112 max0 = _pairReserve0 == 0 ? uint112(balance0.mul(maximumPercentageSync)/100) : uint112(translateToPylon(_pairReserve0, balance0).mul(maximumPercentageSync)/100);
+            uint112 max1 = _pairReserve1 == 0 ? uint112(balance1.mul(maximumPercentageSync)/100) : uint112(translateToPylon(_pairReserve1, balance1).mul(maximumPercentageSync)/100);
+
+            updateReservesRemovingExcess(balance0, balance1, max0, max1);
+        }
+
         emit Burn(msg.sender, amount);
     }
 
