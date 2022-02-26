@@ -428,7 +428,7 @@ describe("Pylon", () => {
         // await token0.transfer(pylonInstance.address, newAmount0)
         // await token1.transfer(pylonInstance.address, newAmount0)
         let ftb = await poolTokenInstance0.balanceOf(account.address)
-        await poolTokenInstance0.transfer(pylonInstance.address, ftb)
+        await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
         await pylonInstance.burnAsync(account2.address, false)
 
 
@@ -501,8 +501,8 @@ describe("Pylon", () => {
         await poolTokenInstance1.transfer(pylonInstance.address, ptb.div(2))
         await pylonInstance.burnAsync(account2.address, true)
 
-        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("114877831817773856"))
-        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("229803719620411871"))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("113902336805269332"))
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("227852321523864441"))
 
         //Anchor burn is a bit sussy but mostly right (amounts are a weird percentage but close to what you'd expect. Maybe it's the fee?)
 
@@ -510,8 +510,8 @@ describe("Pylon", () => {
         await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
         await pylonInstance.burnAsync(account2.address, false)
 
-        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("222134092104868975"))
-        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("444361107904406377"))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("228583054348006536"))
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("457261730136861434"))
 
 
     })
