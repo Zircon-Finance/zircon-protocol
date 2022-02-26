@@ -82,10 +82,11 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         IZirconPylon(pylon).initPylon(to);
     }
 
+
+    //TODO: add min liquidity to check 50/50 transaction
     function initETH(
         address token,
         uint amountDesiredToken,
-        uint amountDesiredETH,
         bool isAnchor,
         address to,
         uint deadline
@@ -94,8 +95,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenB = !isAnchor ?  WETH : token;
         address pylon = _initializePylon(tokenA, tokenB);
 
-        amountA =  !isAnchor ? amountDesiredToken : amountDesiredETH;
-        amountB = !isAnchor ?  amountDesiredETH : amountDesiredToken;
+        amountA =  !isAnchor ? amountDesiredToken : msg.value;
+        amountB = !isAnchor ?  msg.value : amountDesiredToken;
 
         if (isAnchor) {
             TransferHelper.safeTransferFrom(tokenB, msg.sender, pylon, amountB);

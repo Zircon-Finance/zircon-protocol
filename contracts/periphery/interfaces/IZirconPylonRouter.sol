@@ -17,7 +17,6 @@ interface IZirconPylonRouter {
     function initETH(
         address token,
         uint amountDesiredToken,
-        uint amountDesiredETH,
         bool isAnchor,
         address to,
         uint deadline
@@ -65,7 +64,7 @@ interface IZirconPylonRouter {
         uint amountBDesired,
         uint amountAMin,
         uint amountBMin,
-        bool isAnchor,
+        bool shouldReceiveAnchor,
         address to,
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity);
