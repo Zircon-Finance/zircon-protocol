@@ -1,6 +1,6 @@
 {
   "name": "vitt-protocol",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Core Contracts",
   "engines": {
     "node": ">=10"
