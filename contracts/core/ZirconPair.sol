@@ -10,7 +10,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol';
 import './libraries/SafeMath.sol';
 import "./ZirconERC20.sol";
 import "./interfaces/IZirconFactory.sol";
-import "./libraries/console.sol";
+//import "./libraries/////console.sol";
 import "./libraries/ZirconLibrary.sol";
 
 interface IMigrator {
@@ -283,21 +283,22 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
+        //console.log("liquidity", liquidity);
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
         if (isReserve0) {
-            console.log("amount0", amount0);
+            //console.log("amount0", amount0);
             amount0 += ZirconLibrary.getAmountOut(amount1, _reserve1 - amount1, _reserve0 - amount0);
-            console.log("amount0", amount0);
+            //console.log("amount0", amount0);
             amount = amount0;
             require(amount < balance0, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }else{
-            console.log("amount1", amount1);
+            //console.log("amount1", amount1);
             amount1 += ZirconLibrary.getAmountOut(amount0, _reserve0 - amount0, _reserve1 - amount1);
-            console.log("amount1", amount1);
+            //console.log("amount1", amount1);
             amount = amount1;
             require(amount < balance1, "UniswapV2: EXTENSION_NOT_ENOUGH_LIQUIDITY");
         }
@@ -324,7 +325,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
         uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));
         uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
-
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
@@ -343,7 +343,6 @@ contract ZirconPair is IUniswapV2Pair, ZirconERC20 { //Name change does not affe
 
     // this low-level function should be called from a contract which performs important safety checks
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data)  external lock {
-        console.log("swaaaaaaap", amount1Out);
         require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');

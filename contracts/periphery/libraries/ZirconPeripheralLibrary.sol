@@ -12,7 +12,7 @@ library ZirconPeripheralLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(tokenA, tokenB, pair)),
-                hex'ed0e51baf11f697f49862388de055b1e979de3dade733a7722918706b13940d2' // init code hash
+                hex'6496d5ee892afa4fec6fe29abe6c35ecc36acde41701afa7c64df1a6a7acb4df' // init code hash
             ))));
     }
 
@@ -36,7 +36,6 @@ library ZirconPeripheralLibrary {
         uint pairReserveTranslated = translate(reserve, ptt, ptb);
         maximum = (pairReserveTranslated == 0 || reservePylon > pairReserveTranslated) ? maxBase :
         (pairReserveTranslated.mul(syncPercentage)/100).sub(reservePylon);
-
     }
 
 }

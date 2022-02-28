@@ -427,9 +427,10 @@ describe("Pylon", () => {
         console.log("Sync3 Transferring newAmount0 for Async:", newAmount0)
         // await token0.transfer(pylonInstance.address, newAmount0)
         // await token1.transfer(pylonInstance.address, newAmount0)
-        let ftb = await poolTokenInstance0.balanceOf(account.address)
-        await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
-        await pylonInstance.burnAsync(account2.address, false)
+        let ftb = await poolTokenInstance1.balanceOf(account.address)
+        console.log(ftb.div(2))
+        await poolTokenInstance1.transfer(pylonInstance.address, ftb.div(2))
+        await pylonInstance.burn(account2.address, true)
 
 
         console.log("Sync3 Transferring newAmount0 for Sync:", newAmount0)
@@ -516,7 +517,19 @@ describe("Pylon", () => {
 
     })
 
+    it('should burn after init', async function () {
+        let tokenAmount = expandTo18Decimals(10)
+        await init(expandTo18Decimals(5), tokenAmount)
+        let ftb = await poolTokenInstance0.balanceOf(account.address)
+        await poolTokenInstance0.transfer(pylonInstance.address, ftb)
 
+        await pylonInstance.burn(account2.address, false)
+
+        let ptb = await poolTokenInstance1.balanceOf(account.address)
+        await poolTokenInstance1.transfer(pylonInstance.address, ptb)
+
+        await pylonInstance.burn(account2.address, true)
+    })
     it('should add async liquidity', async function () {
         // Let's initialize the pool and pylon
         await addLiquidity(expandTo18Decimals(1700), expandTo18Decimals(  5300))

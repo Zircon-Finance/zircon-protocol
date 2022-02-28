@@ -33,7 +33,6 @@ interface IZirconPylonRouter {
 
     function addSyncLiquidityETH(
         address token,
-        uint amountDesired,
         bool isAnchor,
         bool shouldMintAnchor,
         address to,
@@ -50,7 +49,6 @@ interface IZirconPylonRouter {
 
     function addAsyncLiquidity100ETH(
         address token,
-        uint amountDesired,
         bool isAnchor,
         bool shouldMintAnchor,
         address to,
@@ -72,7 +70,6 @@ interface IZirconPylonRouter {
     function addAsyncLiquidityETH(
         address token,
         uint amountDesiredToken,
-        uint amountDesiredETH,
         uint amountTokenMin,
         uint amountETHMin,
         bool isAnchor,
@@ -86,7 +83,7 @@ interface IZirconPylonRouter {
         address tokenB,
         uint liquidity,
         uint amountMin,
-        bool isAnchor,
+        bool shouldReceiveAnchor,
         address to,
         uint deadline
     ) external returns (uint amount);
