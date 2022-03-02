@@ -1,14 +1,15 @@
 {
-  "name": "vitt-protocol",
-  "version": "1.0.3",
+  "name": "zircon-protocol",
+  "version": "1.0.0",
   "description": "Core Contracts",
   "engines": {
     "node": ">=10"
   },
   "homepage": "https://zircon.finance",
   "repository": {
+    "directory": "",
     "type": "git",
-    "url": "https://github.com/Uniswap/uniswap-v2-periphery"
+    "url": "https://github.com/Zircon-Finance/zircon-protocol"
   },
   "files": [
     "artifacts",

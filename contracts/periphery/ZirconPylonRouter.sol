@@ -324,7 +324,6 @@ contract ZirconPylonRouter is IZirconPylonRouter {
 
         // refund dust eth, if any
         if (msg.value > (isAnchor ? amountA : amountB)) TransferHelper.safeTransferETH(msg.sender, msg.value - (isAnchor ? amountA : amountB));
-
     }
 
     function removeLiquiditySync(
