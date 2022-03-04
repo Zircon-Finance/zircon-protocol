@@ -13,12 +13,10 @@ In-depth documentation on this SDK is available at [uniswap.org](https://uniswap
 
 The protocol includes the contracts handling pylon new features.
 
-Our architecture works on top of Uniswap v2, enabling the creation of two pylon per pair, that are able to handle the single sided liquidity. Our Pylon is not a ERC-20 token as the Uniswap Pair
-but we created another contract Zircon Pool Token that is the ERC-20 Token for the Float and Anchor Shares. 
+Our architecture works on top of Uniswap v2, enabling the creation of two pylons per pair, that can handle the single-sided liquidity. Our Pylon is not an ERC-20 token as Uniswap Pair instead we created another contract Zircon Pool Token that is the ERC-20 Token for the Float and Anchor Shares.
 
-Zircon Pylon keeps a percentage of reserves, and keeps the Pool Token Shares, to handle the principal transactions: Minting and burning tranches. 
-
-Our Pylon Router, handles all the communication, between the user and the Pylon.
+Zircon Pylon keeps a percentage of reserves and the Pool Token Shares, to handle the principal transactions.
+Our Pylon Router, handles all the communication, between the user and the Pylon. 
 
 ## Running tests
 
