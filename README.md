@@ -27,7 +27,7 @@ The protocol includes the contracts handling Pylon and its new single-sided liqu
 
 Our architecture works on top of Uniswap v2, enabling the creation of two Pylons per pair, which handle the single-sided liquidity provision. Each Pylon holds both UniV2 LP tokens of its associated pool and a percentage of reserves of both tokens in the pair. Pylon extends on the basic Uniswap Pair ERC-20 token with the Zircon Pool Token, which is an ERC-20 representation for the Float and Anchor Shares.
 
-Our Pylon Router, handles all the communication, between the user and the Pylon. 
+Our Pylon Router handles all the communication between the user and the Pylon. 
 
 ## Running tests
 
