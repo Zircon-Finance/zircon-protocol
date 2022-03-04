@@ -7,7 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/@uniswap/sdk/latest.svg)](https://www.npmjs.com/package/@uniswap/sdk/v/latest)
 [![npm bundle size (scoped version)](https://img.shields.io/bundlephobia/minzip/@uniswap/sdk/latest.svg)](https://bundlephobia.com/result?p=@uniswap/sdk@latest)
 
-In-depth documentation on this SDK is available at [uniswap.org](https://uniswap.org/docs/v2/SDK/getting-started/), and the documentation on pylon at [zircon.finance](https://docs.zircon.finance)
+In-depth documentation on this SDK is available at [uniswap.org](https://uniswap.org/docs/v2/SDK/getting-started/), while basic documentation for Pylon at [zircon.finance](https://docs.zircon.finance)
 
 
 ## Links
@@ -23,11 +23,10 @@ In-depth documentation on this SDK is available at [uniswap.org](https://uniswap
 
 ## Pylon Enhancements
 
-The protocol includes the contracts handling pylon new features.
+The protocol includes the contracts handling Pylon and its new single-sided liquidity features.
 
-Our architecture works on top of Uniswap v2, enabling the creation of two pylons per pair, that can handle the single-sided liquidity. Our Pylon is not an ERC-20 token as Uniswap Pair instead we created another contract Zircon Pool Token that is the ERC-20 Token for the Float and Anchor Shares.
+Our architecture works on top of Uniswap v2, enabling the creation of two Pylons per pair, which handle the single-sided liquidity provision. Each Pylon holds both UniV2 LP tokens of its associated pool and a percentage of reserves of both tokens in the pair. Pylon extends on the basic Uniswap Pair ERC-20 token with the Zircon Pool Token, which is an ERC-20 representation for the Float and Anchor Shares.
 
-Zircon Pylon keeps a percentage of reserves and the Pool Token Shares, to handle the principal transactions.
 Our Pylon Router, handles all the communication, between the user and the Pylon. 
 
 ## Running tests
