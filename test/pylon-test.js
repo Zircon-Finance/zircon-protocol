@@ -538,7 +538,6 @@ describe("Pylon", () => {
         await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300).div(11))
         //Let's initialize the Pylon, this should call two sync
         await pylonInstance.initPylon(account.address)
-        let ptb0Initial =
         expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("154545454545454544454"))
         expect(await poolTokenInstance1.balanceOf(account.address)).to.eq((ethers.BigNumber.from("481818181818181817181")))
 
