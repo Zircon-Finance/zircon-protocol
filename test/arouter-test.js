@@ -137,7 +137,6 @@ describe("Pylon Router", () => {
         await router.addSyncLiquidityETH(
             token0.address,
             true,
-            false,
             account.address,
             ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
         //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
@@ -195,7 +194,6 @@ describe("Pylon Router", () => {
         await router.addAsyncLiquidity100ETH(
             token0.address,
             true,
-            false,
             account.address,
             ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
         //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
@@ -219,47 +217,6 @@ describe("Pylon Router", () => {
         expect(await ptInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from('3307766655160509873'))
         expect(await token0.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('50000000000000000'))
         expect(await newPair.balanceOf(pylon.address)).to.eq(ethers.BigNumber.from('1805868219291262552'))
-    });
-
-    it('should add sync liquidity ETH leakage', async function () {
-        await token0.approve(router.address, ethers.constants.MaxUint256)
-        await token1.approve(router.address, ethers.constants.MaxUint256)
-        await router.initETH(
-            token0.address,
-            expandTo18Decimals(1),
-            false,
-            account.address,
-            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)})
-        await router.addSyncLiquidityETH(
-            token0.address,
-            false,
-            false,
-            account.address,
-            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
-        //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
-        //Let's get the instances of the new created Pylon and pair....
-        expect(await waffle.provider.getBalance(router.address)).to.eq(ethers.BigNumber.from('0'))
-
-    });
-    it('should add async-100 liquidity ETH leakage', async function () {
-        await token0.approve(router.address, ethers.constants.MaxUint256)
-        await token1.approve(router.address, ethers.constants.MaxUint256)
-        await router.initETH(
-            token0.address,
-            expandTo18Decimals(1),
-            false,
-            account.address,
-            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)})
-        await router.addAsyncLiquidity100ETH(
-            token0.address,
-            false,
-            false,
-            account.address,
-            ethers.constants.MaxUint256, {value: expandTo18Decimals(2)});
-        //expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from('1022004889975550110'))
-        //Let's get the instances of the new created Pylon and pair....
-        expect(await waffle.provider.getBalance(router.address)).to.eq(ethers.BigNumber.from('0'))
-
     });
 
     it('should add async liquidity', async function () {
