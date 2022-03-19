@@ -185,8 +185,13 @@ contract ZirconPylonRouter is IZirconPylonRouter {
 
         address pylon = _getPylon(tokenA, tokenB);
         _transfer(msg.value, shouldMintAnchor ? tokenB : tokenA, pylon);
-        // refunds
         liquidity = IZirconPylon(pylon).mintPoolTokens(to, shouldMintAnchor);
+        // refunds
+        if(msg.value > 0) {
+            if ((isAnchor && shouldMintAnchor) || (!isAnchor && !shouldMintAnchor)){
+                TransferHelper.safeTransferETH(msg.sender, msg.value);
+            }
+        }
     }
 
     function addAsyncLiquidity100(
@@ -206,6 +211,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
             TransferHelper.safeTransferFrom(tokenA, msg.sender, pylon, amountDesired);
         }
         liquidity = IZirconPylon(pylon).mintAsync100(to, isAnchor);
+
+
     }
 
     function _transfer(uint amountDesired, address token, address pylon) private {
@@ -231,6 +238,12 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address pylon = _getPylon(tokenA, tokenB);
         _transfer(msg.value, shouldMintAnchor ? tokenB : tokenA, pylon);
         liquidity = IZirconPylon(pylon).mintAsync100(to, shouldMintAnchor);
+
+        if(msg.value > 0) {
+            if ((isAnchor && shouldMintAnchor) || (!isAnchor && !shouldMintAnchor)){
+                TransferHelper.safeTransferETH(msg.sender, msg.value);
+            }
+        }
     }
 
     // **** Add Async Liquidity **** //
@@ -313,7 +326,6 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address tokenA = !isAnchor ? token : WETH;
         address tokenB = !isAnchor ?  WETH : token;
         (amountA, amountB) = _getAmounts(amountDesiredToken, msg.value, amountTokenMin, amountETHMin, isAnchor, tokenA, tokenB);
-
         {
             address pylon = _getPylon(tokenA, tokenB);
             TransferHelper.safeTransferFrom(isAnchor ? tokenB : tokenA, msg.sender, pylon, isAnchor ? amountB : amountA);
@@ -321,7 +333,6 @@ contract ZirconPylonRouter is IZirconPylonRouter {
             assert(IWETH(WETH).transfer(pylon, isAnchor ? amountA : amountB));
             liquidity = IZirconPylon(pylon).mintAsync(to, shouldReceiveAnchor);
         }
-
         // refund dust eth, if any
         if (msg.value > (isAnchor ? amountA : amountB)) TransferHelper.safeTransferETH(msg.sender, msg.value - (isAnchor ? amountA : amountB));
     }
@@ -397,7 +408,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         {
             (uint amountA, uint amountB) = removeLiquidityAsync(
                 !isAnchor ? token : WETH,
-                !isAnchor ?  WETH : token,
+                !isAnchor ? WETH : token,
                 liquidity,
                 amountTokenMin,
                 amountETHMin,
