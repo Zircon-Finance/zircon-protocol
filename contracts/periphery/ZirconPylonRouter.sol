@@ -295,6 +295,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         if (msg.value > (isAnchor ? amountA : amountB)) TransferHelper.safeTransferETH(msg.sender, msg.value - (isAnchor ? amountA : amountB));
     }
 
+    // *** remove Sync
+
     function removeLiquiditySync(
         address tokenA,
         address tokenB,
@@ -305,9 +307,9 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         uint deadline
     ) virtual override ensure(deadline)  public returns (uint amount){
         address pylon = _getPylon(tokenA, tokenB);
-        IZirconPoolToken(shouldReceiveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
+        IZirconPoolToken(shouldReceiveAnchor ? IZirconPylon(pylon).anchorPoolToken() :
+            IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pylon
         (amount) = IZirconPylon(pylon).burn(to, shouldReceiveAnchor);
-        //consoleg("withdrawing amount", amount);
         require(amount >= amountMin, 'UniswapV2Router: INSUFFICIENT_AMOUNT');
     }
 
@@ -320,8 +322,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) virtual override ensure(deadline)  external returns (uint amount){
-        address tokenA = !isAnchor ? token : WETH;
-        address tokenB = !isAnchor ?  WETH : token;
+        address tokenA = isAnchor ? WETH : token;
+        address tokenB = isAnchor ? token : WETH;
         (amount) = removeLiquiditySync(
             tokenA,
             tokenB,
@@ -346,9 +348,13 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         address to,
         uint deadline
     ) virtual override ensure(deadline)  public returns (uint amountA, uint amountB){
+
+
         address pylon = _getPylon(tokenA, tokenB);
         IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
         (amountA, amountB) = IZirconPylon(pylon).burnAsync(to, isAnchor);
+
+
         require(amountA >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
 
