@@ -35,8 +35,8 @@ exports.coreFixtures = async function coreFixtures(address) {
     console.log("keccak256 bytecode poolToken", ethers.utils.keccak256(poolToken1.bytecode))
     console.log("keccak256 bytecode pairContract", ethers.utils.keccak256(pairContract.bytecode))
     console.log("keccak256 bytecode pylon", ethers.utils.keccak256(zPylon.bytecode))
-    let poolAddress0 = await pylonInstance.floatPoolToken();
-    let poolAddress1 = await pylonInstance.anchorPoolToken();
+    let poolAddress0 = await pylonInstance.floatPoolTokenAddress();
+    let poolAddress1 = await pylonInstance.anchorPoolTokenAddress();
 
     let poolTokenInstance0 = poolToken1.attach(poolAddress0);
     let poolTokenInstance1 = poolToken2.attach(poolAddress1);

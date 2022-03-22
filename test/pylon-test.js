@@ -26,9 +26,7 @@ async function addLiquidity(token0Amount, token1Amount) {
 }
 
 
-// TODO: Put correct events emitted from Pylon SC
 // TODO: See case where we have a big dump
-// TODO: Extract Liquidity Tests
 describe("Pylon", () => {
     beforeEach(async () => {
         [account, account2] = await ethers.getSigners();
@@ -98,14 +96,32 @@ describe("Pylon", () => {
         })
     })  // Let's try to calculate some cases for pylon
 
-    // it('Sync LP Should fail exceeding max', async function () {
-    //     await init(expandTo18Decimals(1700), expandTo18Decimals(  5300))
-    //     await token1.transfer(pylonInstance.address, expandTo18Decimals(  5300))
-    //     // Minting some float/anchor tokens
-    //     await expect(pylonInstance.mintPoolTokens(account.address, true)).to.be.revertedWith(
-    //         "ZP: Exceeds"
-    //     )
-    // });
+    it('Test Creating Pylon With Unbalanced Quantities', async function () {
+        let token0Amount = expandTo18Decimals(1700)
+        let token1Amount = expandTo18Decimals(5300)
+
+        await addLiquidity(token0Amount, token1Amount)
+        // Let's transfer some tokens to the Pylon
+        await token0.transfer(pylonInstance.address, token0Amount.div(100))
+        await token1.transfer(pylonInstance.address, token1Amount.div(11))
+        //Let's initialize the Pylon, this should call two sync
+        await pylonInstance.initPylon(account.address)
+
+        await token0.transfer(pylonInstance.address, expandTo18Decimals(4))
+        await token1.transfer(pylonInstance.address, expandTo18Decimals(4))
+        await expect(pylonInstance.mintPoolTokens(account.address, false))
+        let gamma = await pylonInstance.gammaMulDecimals()
+
+        await expect(gamma).to.eq(ethers.BigNumber.from("500000000000000000"))
+
+        await expect(pylonInstance.mintPoolTokens(account.address, true))
+        gamma = await pylonInstance.gammaMulDecimals()
+        await expect(gamma).to.eq(ethers.BigNumber.from("500000000000000000"))
+
+        expect(await poolTokenInstance0.balanceOf(account.address)).to.eq(ethers.BigNumber.from("105954545454545453652"))
+        expect(await poolTokenInstance1.balanceOf(account.address)).to.eq(ethers.BigNumber.from("481818181818181817181"))
+
+    });
 
     it('should add float/anchor liquidity', async function () {
         // Adding some tokens and minting
