@@ -527,8 +527,8 @@ describe("Pylon", () => {
         await poolTokenInstance0.transfer(pylonInstance.address, ftb.div(2))
         await pylonInstance.burnAsync(account2.address, false)
 
-        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("228583054348006536"))
-        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("457261730136861434"))
+        expect(await token0.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("228939119231152225"))
+        expect(await token1.balanceOf(account2.address)).to.eq(ethers.BigNumber.from("458216168623073120"))
 
 
     })

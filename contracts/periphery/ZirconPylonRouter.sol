@@ -307,8 +307,8 @@ contract ZirconPylonRouter is IZirconPylonRouter {
         uint deadline
     ) virtual override ensure(deadline)  public returns (uint amount){
         address pylon = _getPylon(tokenA, tokenB);
-        IZirconPoolToken(shouldReceiveAnchor ? IZirconPylon(pylon).anchorPoolToken() :
-            IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pylon
+        IZirconPoolToken(shouldReceiveAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() :
+            IZirconPylon(pylon).floatPoolTokenAddress()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pylon
         (amount) = IZirconPylon(pylon).burn(to, shouldReceiveAnchor);
         require(amount >= amountMin, 'UniswapV2Router: INSUFFICIENT_AMOUNT');
     }
@@ -351,7 +351,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
 
 
         address pylon = _getPylon(tokenA, tokenB);
-        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
+        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() : IZirconPylon(pylon).floatPoolTokenAddress()).transferFrom(msg.sender, pylon, liquidity); // send liquidity to pair
         (amountA, amountB) = IZirconPylon(pylon).burnAsync(to, isAnchor);
 
 
@@ -400,7 +400,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     //    ) virtual override ensure(deadline)  external returns (uint amount){
     //        address pylon = _getPylon(tokenA, tokenB);
     //        uint value = approveMax ? uint(-1) : liquidity;
-    //        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken()).permit(msg.sender, address(this), value, deadline, v, r, s);
+    //        IZirconPoolToken(isAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() : IZirconPylon(pylon).floatPoolTokenAddress()).permit(msg.sender, address(this), value, deadline, v, r, s);
     //        (amount) = removeLiquiditySync(tokenA, tokenB, liquidity, amountMin, isAnchor, to, deadline);
     //    }
     //
@@ -416,7 +416,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     //    ) virtual override ensure(deadline) external returns (uint amount){
     //        address pylon = UniswapV2Library.pairFor(factory, token, WETH);
     //        uint value = approveMax ? uint(-1) : liquidity;
-    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() : IZirconPylon(pylon).floatPoolTokenAddress())
     //        .permit(msg.sender, address(this), value, deadline, v, r, s);
     //        (amount) = removeLiquiditySyncETH(
     //            token,
@@ -444,7 +444,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     //
     //        address pylon = _getPylon(tokenA, tokenB);
     //        uint value = approveMax ? uint(-1) : liquidity;
-    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() : IZirconPylon(pylon).floatPoolTokenAddress())
     //        .permit(msg.sender, address(this), value, deadline, v, r, s);
     //        (amountA, amountB) = removeLiquidityAsyncETH(token, liquidity, amountAMin, amountBMin, isAnchor, to, deadline);
     //
@@ -463,7 +463,7 @@ contract ZirconPylonRouter is IZirconPylonRouter {
     //    ) virtual override ensure(deadline) external returns (uint amountA, uint amountB){
     //        address pylon = _getPylon(tokenA, tokenB);
     //        uint value = approveMax ? uint(-1) : liquidity;
-    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolToken() : IZirconPylon(pylon).floatPoolToken())
+    //        IZirconPoolToken(shouldRemoveAnchor ? IZirconPylon(pylon).anchorPoolTokenAddress() : IZirconPylon(pylon).floatPoolToken())
     //        .permit(msg.sender, address(this), value, deadline, v, r, s);
     //        (amountA, amountB) = removeLiquidityAsync(token, liquidity, amountTokenMin, amountETHMin, isAnchor, shouldBurnAnchor, to, deadline);
     //
