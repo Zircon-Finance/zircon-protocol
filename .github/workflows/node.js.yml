@@ -26,10 +26,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - name: create env file
-      run: |
-        touch .env
-        echo PRIVKEY=${{ secrets.PRIVKEY }}\n >> .env
+    - run:
+        touch .env &&
+        echo PRIVKEY=${{ secrets.PRIVKEY }}\n >> .env &&
         echo PRIVKEY_DEV=${{ secrets.PRIVKEY_DEV }}\n >> .env
     - run: npm ci
     - run: npm run build --if-present
