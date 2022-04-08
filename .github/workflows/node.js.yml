@@ -38,4 +38,6 @@ jobs:
       if: ${{ failure() }}
       uses: rtCamp/action-slack-notify@v2
       env:
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_TITLE: Test Failed on Zircon Protocol
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
