@@ -442,7 +442,7 @@ describe("Pylon", () => {
         let vfb3 = await pylonInstance.virtualFloatBalance();
         let vab3 = await pylonInstance.virtualAnchorBalance();
         expect(vfb3).to.eq(ethers.BigNumber.from('947728772470068004'))
-        expect(vab3).to.eq(ethers.BigNumber.from('9394220164340522812'))
+        expect(vab3).to.eq(ethers.BigNumber.from('1'))
 
 
         console.log("Sync3 Transferring newAmount0 for Async:", newAmount0)
