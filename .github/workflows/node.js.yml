@@ -33,3 +33,9 @@ jobs:
     - run: npm i 
     - run: npx hardhat compile
     - run: npm test
+    
+    - name: report to slack
+      if: ${{ failure() }}
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
