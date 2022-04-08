@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./SafeMath.sol";
+import "hardhat/console.sol";
 
 library ZirconLibrary {
     using SafeMath for uint256;
@@ -39,20 +40,23 @@ library ZirconLibrary {
     // @_amount is the quantity to convert
     // @_totalSupply is the supply of the pt's tranch
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
-    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve, uint _reservePylon, uint _gamma, uint _vab) pure internal returns (uint liquidity){
+    function calculatePTU(bool _isAnchor, uint _amount, uint _totalSupply, uint _reserve, uint _reservePylon, uint _gamma, uint _vab) view internal returns (uint liquidity){
         if (_isAnchor) {
             liquidity = _amount.mul(_totalSupply)/_vab;
         }else {
             uint numerator = _amount.mul(_totalSupply);
             uint resTranslated = _reserve.mul(_gamma).mul(2)/1e18;
             uint denominator = (_reservePylon.add(resTranslated));
+            console.log("calculatePTU::float::_reservePylon", _reservePylon);
+            console.log("calculatePTU::float::_reserve", _reserve);
+            console.log("calculatePTU::float::denominator", denominator);
             liquidity = (numerator/denominator);
         }
     }
 
-    // This function converts pool token share, specifing which tranch with @isAnchor, to token amount
+    // This function converts pool token share, specifying which tranches with @isAnchor, to token amount
     // @_ptuAmount is the quantity to convert
-    // @_totalSupply is the supply of the pt of the tranch
+    // @_totalSupply is the supply of the pt of the tranches
     // @reserve0, @_gamma, @vab are the variables needed to the calculation of the amount
     function calculatePTUToAmount(bool _isAnchor, uint _ptuAmount, uint _totalSupply, uint _reserve0, uint _reservePylon0, uint _gamma, uint _vab) pure internal returns (uint amount) {
         if (_isAnchor) {

@@ -23,7 +23,7 @@ library UniswapV2Library {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'dfbe953318c58adccf5633a89c8e021756f2e2edc9d2398643c2cb10db67485f' // init code hash
+                hex'286e699900f11d3219a9d5e39197c131407cb544fc25535d625b13f9b2d96a10' // init code hash
             ))));
     }
 

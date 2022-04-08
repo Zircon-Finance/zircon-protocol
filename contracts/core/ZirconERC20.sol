@@ -4,7 +4,7 @@ import './libraries/SafeMath.sol';
 
 contract ZirconERC20 is IUniswapV2ERC20 {
     using SafeMath for uint;
-    // TODO: change name of tokenz
+    // TODO: change name of token
     string public constant  name = 'Zircon';
     string public constant  symbol = 'ZPT';
     uint8 public constant  decimals = 18;

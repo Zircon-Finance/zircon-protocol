@@ -14,7 +14,7 @@ contract ZirconPylonFactory {
     uint public dynamicFeePercentage;
 
     event PylonCreated(address indexed token0, address indexed token1, address pair);
-    event PoolTokenCreated(address indexed token0, address poolToken);
+    event PoolTokenCreated(address indexed token, address poolToken, address pylon, address pair, bool isAnchor);
 
     constructor(address _factory) public {
         factory = _factory;
@@ -63,10 +63,10 @@ contract ZirconPylonFactory {
         emit PylonCreated(_tokenA, _tokenB, pylonAddress);
 
         ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, true);
-        emit PoolTokenCreated(_tokenA, poolTokenA);
+        emit PoolTokenCreated(_tokenA, poolTokenA, pylonAddress, _pairAddress, true);
 
         ZirconPoolToken(poolTokenB).initialize(_tokenB, _pairAddress, pylonAddress, false);
-        emit PoolTokenCreated(_tokenB, poolTokenB);
+        emit PoolTokenCreated(_tokenB, poolTokenB, pylonAddress, _pairAddress, false);
 
         getPylon[_tokenA][_tokenB] = pylonAddress;
         allPylons.push(pylonAddress);

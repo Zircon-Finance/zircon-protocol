@@ -13,7 +13,7 @@ interface IZirconPylon {
     function initialize(address _floatPoolToken, address _anchorPoolToken, address _token0, address _token1, address _pairAddress, address _pairFactory) external;
     // On init pylon we have to handle two cases
     // The first case is when we initialize the pair through the pylon
-    // And the second one is when initialize the pylon with a pair already existing
+    // And the second one is when initialize the pylon with a pair al ready existing
     function initPylon(address _to) external returns (uint floatLiquidity, uint anchorLiquidity);
     // External Function called to mint pool Token
     // Liquidity have to be sent before
