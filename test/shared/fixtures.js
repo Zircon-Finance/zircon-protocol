@@ -6,8 +6,11 @@ exports.coreFixtures = async function coreFixtures(address) {
     let factory = await ethers.getContractFactory('ZirconFactory');
     let factoryInstance = await factory.deploy(address);
 
+    let factoryEnergy = await ethers.getContractFactory('ZirconEnergyFactory');
+    let factoryEnergyInstance = await factoryEnergy.deploy();
+    console.log("energy", factoryEnergyInstance.address)
     let factoryPylon = await ethers.getContractFactory('ZirconPylonFactory');
-    let factoryPylonInstance = await factoryPylon.deploy(factoryInstance.address);
+    let factoryPylonInstance = await factoryPylon.deploy(factoryInstance.address, factoryEnergyInstance.address);
 
     // Deploy Tokens
     let tok0 = await ethers.getContractFactory('Token');
@@ -40,6 +43,8 @@ exports.coreFixtures = async function coreFixtures(address) {
 
     let poolTokenInstance0 = poolToken1.attach(poolAddress0);
     let poolTokenInstance1 = poolToken2.attach(poolAddress1);
+
+    // factoryEnergyInstance.createEnergy(pylonAddress, lpAddress, token0.address, token1.address);
 
     //Router
     let WETH = await ethers.getContractFactory('WETH');

@@ -10,8 +10,9 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IZirconPylonFactory.sol";
 import "hardhat/console.sol";
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+import "./interfaces/IZirconPylon.sol";
 
-contract ZirconPylon {
+contract ZirconPylon is IZirconPylon{
     // **** Libraries ****
     using SafeMath for uint112;
     using SafeMath for uint256;
@@ -176,6 +177,7 @@ contract ZirconPylon {
 
         maximumPercentageSync = IZirconPylonFactory(factoryAddress).maximumPercentageSync();
         dynamicFeePercentage = IZirconPylonFactory(factoryAddress).dynamicFeePercentage();
+
     }
 
     // On init pylon we have to handle two cases
@@ -521,8 +523,6 @@ contract ZirconPylon {
                 //TODO: Check that this works and there are no gamma that assume gamma is ftv/atv+ftv
                 gammaMulDecimals = ((virtualFloatBalance.sub(pylonReserve0)) *1e18) /  totalPoolValueFloatPrime;
             }
-
-
 
             // TODO: (see if make sense to insert a floor to for example 25/75)
             //Sync pool also gets a claim to these

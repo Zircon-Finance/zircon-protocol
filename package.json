@@ -1,6 +1,6 @@
 {
   "name": "zircon-protocol",
-  "version": "1.0.3-alpha.0",
+  "version": "1.0.3-alpha.1",
   "description": "Core Contracts",
   "engines": {
     "node": ">=10"
@@ -23,6 +23,7 @@
     "ethers": "^5.5.1",
     "hardhat": "^2.6.8",
     "hardhat-contract-sizer": "^2.3.0",
+    "hardhat-dependency-compiler": "^1.1.2",
     "mocha": "*"
   },
   "dependencies": {
@@ -31,7 +32,8 @@
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "dotenv": "^10.0.0",
-    "hardhat-watcher": "^2.1.1"
+    "hardhat-watcher": "^2.1.1",
+    "zircon-energy": "^1.0.0-alpha.3"
   },
   "scripts": {
     "deploy": "npx hardhat run --network moonbase scripts/deploy-script.js",

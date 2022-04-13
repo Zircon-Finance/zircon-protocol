@@ -3,21 +3,23 @@ pragma solidity =0.5.16;
 //import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import './ZirconPoolToken.sol';
 import './ZirconPylon.sol';
-import './interfaces/IZirconFactory.sol';
+//import '../energy/interfaces/IZirconEnergyFactory.sol';
 
-contract ZirconPylonFactory {
+contract ZirconPylonFactory is IZirconPylonFactory {
     mapping(address => mapping(address => address)) public getPylon;
     address[] public allPylons;
     address public factory;
+    address public energyFactory;
 
     uint public maximumPercentageSync;
     uint public dynamicFeePercentage;
+    bytes4 private constant CREATE = bytes4(keccak256(bytes('createEnergy(address,address,address,address)')));
 
-    event PylonCreated(address indexed token0, address indexed token1, address pair);
-    event PoolTokenCreated(address indexed token, address poolToken, address pylon, address pair, bool isAnchor);
+    event PylonCreated(address indexed token0, address indexed token1, address poolToken0, address poolToken1, address pylon, address pair);
 
-    constructor(address _factory) public {
+    constructor(address _factory, address _energyFactory) public {
         factory = _factory;
+        energyFactory = _energyFactory;
         maximumPercentageSync = 10;
         dynamicFeePercentage = 5;
     }
@@ -26,7 +28,7 @@ contract ZirconPylonFactory {
         return allPylons.length;
     }
 
-    function pairCodeHash() external pure returns (bytes32) {
+    function pylonCodeHash() external pure returns (bytes32) {
         return keccak256(type(ZirconPylon).creationCode);
     }
 
@@ -47,7 +49,10 @@ contract ZirconPylonFactory {
             pylon := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
     }
-
+//    function createEnergy(address _pylonAddress, address _pairAddress, address _tokenA, address _tokenB) private {
+//        (bool success, bytes memory data) = energyFactory.call(abi.encodeWithSelector(CREATE, _pylonAddress, _pairAddress, _tokenA, _tokenB));
+//        require(success && (data.length == 0 || abi.decode(data, (bool))), 'ZP: ENERGY_FAILED_CREATION');
+//    }
 
     // Adding Pylon
     // First Token is always the Float and the second one is the Anchor
@@ -60,13 +65,13 @@ contract ZirconPylonFactory {
         address poolTokenB = createTokenAddress(_tokenB, pylonAddress); // Anchor
 
         ZirconPylon(pylonAddress).initialize(poolTokenA, poolTokenB, _tokenA, _tokenB, _pairAddress, factory);
-        emit PylonCreated(_tokenA, _tokenB, pylonAddress);
 
-        ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, true);
-        emit PoolTokenCreated(_tokenA, poolTokenA, pylonAddress, _pairAddress, true);
+        ZirconPoolToken(poolTokenA).initialize(_tokenA, _pairAddress, pylonAddress, false);
+        ZirconPoolToken(poolTokenB).initialize(_tokenB, _pairAddress, pylonAddress, true);
 
-        ZirconPoolToken(poolTokenB).initialize(_tokenB, _pairAddress, pylonAddress, false);
-        emit PoolTokenCreated(_tokenB, poolTokenB, pylonAddress, _pairAddress, false);
+        emit PylonCreated(_tokenA, _tokenB, poolTokenA, poolTokenB, pylonAddress, _pairAddress);
+
+        //createEnergy(pylonAddress, _pairAddress, _tokenA, _tokenB);
 
         getPylon[_tokenA][_tokenB] = pylonAddress;
         allPylons.push(pylonAddress);

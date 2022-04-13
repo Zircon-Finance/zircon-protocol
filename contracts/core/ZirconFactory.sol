@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity =0.5.16;
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
-//import './ZirconPoolToken.sol';
 import './ZirconPair.sol';
-//import './ZirconPylon.sol';
 
 contract ZirconFactory is IUniswapV2Factory {
     address public feeTo;
@@ -14,8 +12,6 @@ contract ZirconFactory is IUniswapV2Factory {
     address[] public allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
-    event PylonCreated(address indexed token0, address indexed token1, address pair);
-    event PoolTokenCreated(address indexed token0, address poolToken);
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
